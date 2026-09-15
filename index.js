@@ -95,7 +95,7 @@ const ROLES = {
 
     support: {
         name: "Support",
-        emoji: "💠",
+        emoji: "🛟",
         description:
             "Heroes who protect, empower, heal, or control."
     }
@@ -110,42 +110,42 @@ const LANES = {
 
     clashlane: {
         name: "Clashlane",
-        emoji: "⚔️",
+        emoji: "<:Clashlane:1513825292148277388>",
         description:
             "Solo lane for dueling and split pushing."
     },
 
     jungler: {
         name: "Jungler",
-        emoji: "🌲",
+        emoji: "<:Jungler:1513825401326145546>",
         description:
             "Jungle resources, objectives, and map pressure."
     },
 
     midlane: {
         name: "Midlane",
-        emoji: "🔮",
+        emoji: "<:Midlane:1513825531382988881>",
         description:
             "Wave clearing, rotations, and team fights."
     },
 
     farmlane: {
         name: "Farmlane",
-        emoji: "🏹",
+        emoji: "<:Farmlane:1513825643517968485>",
         description:
             "Gold farming and primary damage."
     },
 
     roamer: {
         name: "Roamer",
-        emoji: "🛡️",
+        emoji: "<:Roamer:1513825726212735107>",
         description:
             "Map support, initiation, and team assistance."
     },
 
     versatile: {
         name: "Versatile",
-        emoji: "🔄",
+        emoji: "<:Versatile:1517379377686380594>",
         description:
             "Comfortable adapting to multiple lanes."
     }
@@ -449,7 +449,7 @@ function createMainEmbed() {
 
             "**Please choose your main role and lane.**\n\n" +
 
-            "Select the Hero Role and Lane that best " +
+            "<:AI:1549055579362828309> Select the Hero Role and Lane that best " +
             "represent your playstyle in Honor of Kings.\n\n" +
 
             "Your selections will automatically update " +
