@@ -1164,7 +1164,15 @@ if (!GUILD_ID) {
 // ==========================================
 // LOGIN
 // ==========================================
+console.log("🔄 Attempting Discord login...");
+console.log("Token exists:", !!TOKEN);
+console.log("Client ID exists:", !!CLIENT_ID);
+console.log("Guild ID exists:", !!GUILD_ID);
+console.log("Log Channel ID exists:", !!LOG_CHANNEL_ID);
 
+client.once("ready", () => {
+    console.log(`🤖 BOT READY: ${client.user.tag}`);
+});
 client.login(TOKEN)
 
     .then(() => {
