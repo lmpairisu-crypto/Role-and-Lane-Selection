@@ -1018,18 +1018,12 @@ client.on(
 ) {
 
     return interaction.update({
-
-        content:
-            "✅ **Lane selection saved.**\nYou can click **Choose
-            Lane ▶️** again anytime to change it.",
-
+        content: "✅ **Lane selection saved.** You can click **Choose Lane ▶️** again anytime to change it.",
         embeds: [],
-
         components: []
-
     });
 
-}
+        }
 
         // ---------------------------------------------
         // CLOSE LANE POPUP
