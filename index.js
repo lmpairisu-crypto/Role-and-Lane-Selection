@@ -1018,10 +1018,8 @@ client.on(
         ) {
 
             return interaction.update({
-
-                content:
-                    "✅ **Role selection saved.**\nYou can click ◀️ **Choose Role** again anytime to change it.",
-
+content:
+    "✅ **Lane selection saved.**\nYou can click **Choose Lane ▶️** again anytime to change it.",
                 embeds: [],
 
                 components: []
