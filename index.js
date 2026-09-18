@@ -8,6 +8,7 @@ const {
   REST,
   Routes,
   SlashCommandBuilder,
+  MessageFlags,
 } = require('discord.js');
 
 const http = require('http');
@@ -19,9 +20,12 @@ const http = require('http');
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
-const ROLE_LANE_CHANNEL_ID = process.env.ROLE_LANE_CHANNEL_ID;
-const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
-const LAMPOON_GIF_URL = process.env.LAMPOON_GIF_URL;
+const ROLE_LANE_CHANNEL_ID =
+  process.env.ROLE_LANE_CHANNEL_ID;
+const LOG_CHANNEL_ID =
+  process.env.LOG_CHANNEL_ID;
+const LAMPOON_GIF_URL =
+  process.env.LAMPOON_GIF_URL;
 
 // =====================================================
 // ROLE IDs
@@ -144,53 +148,73 @@ const LANES = {
 // =====================================================
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [
+    GatewayIntentBits.Guilds,
+  ],
 });
 
 // =====================================================
 // RENDER HEALTH SERVER
 // =====================================================
 
-const PORT = Number(process.env.PORT) || 10000;
+const PORT =
+  Number(process.env.PORT) || 10000;
 
-const healthServer = http.createServer((req, res) => {
-  res.writeHead(200, {
-    'Content-Type': 'text/plain; charset=utf-8',
-  });
+const healthServer = http.createServer(
+  (req, res) => {
+    res.writeHead(200, {
+      'Content-Type':
+        'text/plain; charset=utf-8',
+    });
 
-  if (req.url === '/health') {
-    return res.end('OK');
+    if (req.url === '/health') {
+      return res.end('OK');
+    }
+
+    res.end(
+      'LAMPOON Role & Lane Bot is online.'
+    );
   }
+);
 
-  res.end('LAMPOON Role & Lane Bot is online.');
-});
-
-healthServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`🌐 Health server listening on port ${PORT}`);
-});
+healthServer.listen(
+  PORT,
+  '0.0.0.0',
+  () => {
+    console.log(
+      `🌐 Health server listening on port ${PORT}`
+    );
+  }
+);
 
 // =====================================================
 // MAIN EMBED
 // =====================================================
 
 function createMainEmbed() {
-  const embed = new EmbedBuilder()
-    .setColor(0x3299DB)
-    .setTitle('⚔️ ROLE & 🛣️ LANE SELECTION')
-    .setDescription(
-      '**Your selection automatically updates your LAMPOON Discord roles.**\n\n' +
+  const embed =
+    new EmbedBuilder()
+      .setColor(0x3299DB)
+      .setTitle(
+        '⚔️ ROLE & 🛣️ LANE SELECTION'
+      )
+      .setDescription(
+        '**Your selection automatically updates your LAMPOON Discord roles.**\n\n' +
         '◀️ **Role**\n' +
         'Choose one or more Hero Roles you are comfortable playing in-game.\n\n' +
         '▶️ **Lane**\n' +
         'Choose one or more Lane Roles to gain their corresponding server colors.\n\n' +
         'You can change your Role or Lane selections anytime.'
-    )
-    .setFooter({
-      text: 'LAMPOON • Role & Lane Selection',
-    });
+      )
+      .setFooter({
+        text:
+          'LAMPOON • Role & Lane Selection',
+      });
 
   if (LAMPOON_GIF_URL) {
-    embed.setThumbnail(LAMPOON_GIF_URL);
+    embed.setThumbnail(
+      LAMPOON_GIF_URL
+    );
   }
 
   return embed;
@@ -201,19 +225,28 @@ function createMainEmbed() {
 // =====================================================
 
 function createMainButtons() {
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId('lampoon_open_roles')
-      .setLabel('Choose Role')
-      .setEmoji('◀️')
-      .setStyle(ButtonStyle.Secondary),
+  return new ActionRowBuilder()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          'lampoon_open_roles'
+        )
+        .setLabel('Choose Role')
+        .setEmoji('◀️')
+        .setStyle(
+          ButtonStyle.Secondary
+        ),
 
-    new ButtonBuilder()
-      .setCustomId('lampoon_open_lanes')
-      .setLabel('Choose Lane')
-      .setEmoji('▶️')
-      .setStyle(ButtonStyle.Secondary)
-  );
+      new ButtonBuilder()
+        .setCustomId(
+          'lampoon_open_lanes'
+        )
+        .setLabel('Choose Lane')
+        .setEmoji('▶️')
+        .setStyle(
+          ButtonStyle.Secondary
+        )
+    );
 }
 
 // =====================================================
@@ -226,24 +259,32 @@ function createPopupEmbed(
   title,
   section
 ) {
-  const selected = Object.entries(data)
-    .filter(([id]) => {
-      const roleId = ROLE_IDS[id];
+  const selected =
+    Object.entries(data)
+      .filter(([id]) => {
+        const roleId =
+          ROLE_IDS[id];
 
-      return (
-        roleId &&
-        member.roles.cache.has(roleId)
-      );
-    })
-    .map(([, item]) => {
-      return `${item.emoji} **${item.name}**`;
-    });
+        return (
+          roleId &&
+          member.roles.cache.has(
+            roleId
+          )
+        );
+      })
+      .map(([, item]) => {
+        return `${item.emoji} **${item.name}**`;
+      });
 
-  const body = Object.values(data)
-    .map((item) => {
-      return `${item.emoji} **${item.name}**\n> ${item.description}`;
-    })
-    .join('\n\n');
+  const body =
+    Object.values(data)
+      .map((item) => {
+        return (
+          `${item.emoji} **${item.name}**\n` +
+          `> ${item.description}`
+        );
+      })
+      .join('\n\n');
 
   const icon =
     section === 'Hero Roles'
@@ -266,9 +307,14 @@ function createPopupEmbed(
         )
     )
     .setFooter({
-      text: 'Click an option to add or remove it.',
+      text:
+        'Click an option to add or remove it.',
     });
 }
+
+// =====================================================
+// ROLE EMBED
+// =====================================================
 
 function createRoleEmbed(member) {
   return createPopupEmbed(
@@ -278,6 +324,10 @@ function createRoleEmbed(member) {
     'Hero Roles'
   );
 }
+
+// =====================================================
+// LANE EMBED
+// =====================================================
 
 function createLaneEmbed(member) {
   return createPopupEmbed(
@@ -289,7 +339,7 @@ function createLaneEmbed(member) {
 }
 
 // =====================================================
-// OPTION BUTTONS
+// OPTION BUTTON ROWS
 // =====================================================
 
 function createOptionRows(
@@ -298,7 +348,9 @@ function createOptionRows(
   prefix,
   perRow
 ) {
-  const entries = Object.entries(data);
+  const entries =
+    Object.entries(data);
+
   const rows = [];
 
   for (
@@ -311,14 +363,19 @@ function createOptionRows(
 
     for (
       const [id, item]
-      of entries.slice(i, i + perRow)
+      of entries.slice(
+        i,
+        i + perRow
+      )
     ) {
       const roleId =
         ROLE_IDS[id];
 
       const selected =
         roleId &&
-        member.roles.cache.has(roleId);
+        member.roles.cache.has(
+          roleId
+        );
 
       row.addComponents(
         new ButtonBuilder()
@@ -355,17 +412,18 @@ function createRoleButtons(member) {
       3
     ),
 
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(
-          'lampoon_close_role_popup'
-        )
-        .setLabel('Done')
-        .setEmoji('✅')
-        .setStyle(
-          ButtonStyle.Primary
-        )
-    ),
+    new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(
+            'lampoon_close_role_popup'
+          )
+          .setLabel('Done')
+          .setEmoji('✅')
+          .setStyle(
+            ButtonStyle.Primary
+          )
+      ),
   ];
 }
 
@@ -383,17 +441,18 @@ function createLaneButtons(member) {
       2
     ),
 
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(
-          'lampoon_close_lane_popup'
-        )
-        .setLabel('Done')
-        .setEmoji('✅')
-        .setStyle(
-          ButtonStyle.Primary
-        )
-    ),
+    new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(
+            'lampoon_close_lane_popup'
+          )
+          .setLabel('Done')
+          .setEmoji('✅')
+          .setStyle(
+            ButtonStyle.Primary
+          )
+      ),
   ];
 }
 
@@ -434,6 +493,14 @@ async function sendLog(embed) {
 
 async function sendOrFindPanel() {
   try {
+    if (
+      !ROLE_LANE_CHANNEL_ID
+    ) {
+      throw new Error(
+        'ROLE_LANE_CHANNEL_ID is missing.'
+      );
+    }
+
     const channel =
       await client.channels.fetch(
         ROLE_LANE_CHANNEL_ID
@@ -463,7 +530,10 @@ async function sendOrFindPanel() {
             '⚔️ ROLE & 🛣️ LANE SELECTION'
       );
 
+    // -----------------------------------------------
     // UPDATE EXISTING PANEL
+    // -----------------------------------------------
+
     if (existingPanel) {
       await existingPanel.edit({
         embeds: [
@@ -481,7 +551,10 @@ async function sendOrFindPanel() {
       return;
     }
 
+    // -----------------------------------------------
     // CREATE NEW PANEL
+    // -----------------------------------------------
+
     const panel =
       await channel.send({
         embeds: [
@@ -527,8 +600,9 @@ const commands = [
 // READY
 // =====================================================
 
+// Updated for Discord.js v14+
 client.once(
-  'ready',
+  'clientReady',
   async () => {
     console.log(
       `🤖 Logged in as ${client.user.tag}`
@@ -651,7 +725,8 @@ client.on(
 
           return interaction.reply({
             embeds: [embed],
-            ephemeral: true,
+            flags:
+              MessageFlags.Ephemeral,
           });
         }
 
@@ -668,7 +743,8 @@ client.on(
             ...Object.keys(LANES),
           ]
             .map(
-              (id) => ROLE_IDS[id]
+              (id) =>
+                ROLE_IDS[id]
             )
             .filter(
               (roleId) =>
@@ -692,7 +768,8 @@ client.on(
               return interaction.reply({
                 content:
                   '❌ I could not reset your roles. Check **Manage Roles** and role hierarchy.',
-                ephemeral: true,
+                flags:
+                  MessageFlags.Ephemeral,
               });
             }
           }
@@ -712,7 +789,8 @@ client.on(
           return interaction.reply({
             content:
               '✅ Your Hero Roles and Lanes have been reset.',
-            ephemeral: true,
+            flags:
+              MessageFlags.Ephemeral,
           });
         }
       }
@@ -742,7 +820,8 @@ client.on(
           ],
           components:
             createRoleButtons(member),
-          ephemeral: true,
+          flags:
+            MessageFlags.Ephemeral,
         });
       }
 
@@ -760,7 +839,8 @@ client.on(
           ],
           components:
             createLaneButtons(member),
-          ephemeral: true,
+          flags:
+            MessageFlags.Ephemeral,
         });
       }
 
@@ -821,7 +901,8 @@ client.on(
           return interaction.reply({
             content:
               '❌ This role is not configured correctly.',
-            ephemeral: true,
+            flags:
+              MessageFlags.Ephemeral,
           });
         }
 
@@ -849,7 +930,8 @@ client.on(
           return interaction.reply({
             content:
               '❌ I could not update that role. Check **Manage Roles** and role hierarchy.',
-            ephemeral: true,
+            flags:
+              MessageFlags.Ephemeral,
           });
         }
 
@@ -916,7 +998,8 @@ client.on(
           return interaction.reply({
             content:
               '❌ This lane is not configured correctly.',
-            ephemeral: true,
+            flags:
+              MessageFlags.Ephemeral,
           });
         }
 
@@ -944,7 +1027,8 @@ client.on(
           return interaction.reply({
             content:
               '❌ I could not update that lane. Check **Manage Roles** and role hierarchy.',
-            ephemeral: true,
+            flags:
+              MessageFlags.Ephemeral,
           });
         }
 
@@ -1000,7 +1084,8 @@ client.on(
           .reply({
             content:
               '❌ Something went wrong. Check the bot permissions and role hierarchy.',
-            ephemeral: true,
+            flags:
+              MessageFlags.Ephemeral,
           })
           .catch(() => {});
       }
