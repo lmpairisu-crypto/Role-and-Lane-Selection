@@ -1013,20 +1013,23 @@ client.on(
         // ---------------------------------------------
 
         if (
-            interaction.customId ===
-            "lampoon_close_role_popup"
-        ) {
+    interaction.customId ===
+    "lampoon_close_lane_popup"
+) {
 
-            return interaction.update({
-content:
-    "✅ **Lane selection saved.**\nYou can click **Choose Lane ▶️** again anytime to change it.",
-                embeds: [],
+    return interaction.update({
 
-                components: []
+        content:
+            "✅ **Lane selection saved.**\nYou can click **Choose
+            Lane ▶️** again anytime to change it.",
 
-            });
+        embeds: [],
 
-        }
+        components: []
+
+    });
+
+}
 
         // ---------------------------------------------
         // CLOSE LANE POPUP
