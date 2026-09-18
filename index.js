@@ -1151,7 +1151,6 @@ client.on(
 
                     }
 
-                } catch (error) {
-
-                    console.error(
-                        "❌ Failed
+                } catch (e) {
+    console.error("❌ Failed to send log:", e);
+}
