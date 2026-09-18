@@ -52,37 +52,43 @@ const ROLES = {
     fighter: {
         name: "Fighter",
         emoji: "⚔️",
-        description: "ᴅᴜʀᴀʙʟᴇ ᴍᴇʟᴇᴇ ʜᴇʀᴏᴇs ᴀɴᴅ ᴅᴜᴇʟɪsᴛs."
+        description:
+            "ᴅᴜʀᴀʙʟᴇ ᴍᴇʟᴇᴇ ʜᴇʀᴏᴇs ᴀɴᴅ ᴅᴜᴇʟɪsᴛs."
     },
 
     tank: {
         name: "Tank",
         emoji: "🛡️",
-        description: "ꜰʀᴏɴᴛʟɪɴᴇ ʜᴇʀᴏᴇs ᴡʜᴏ ᴘʀᴏᴛᴇᴄᴛ ᴛʜᴇ ᴛᴇᴀᴍ."
+        description:
+            "ꜰʀᴏɴᴛʟɪɴᴇ ʜᴇʀᴏᴇs ᴡʜᴏ ᴘʀᴏᴛᴇᴄᴛ ᴛʜᴇ ᴛᴇᴀᴍ."
     },
 
     assassin: {
         name: "Assassin",
         emoji: "🗡️",
-        description: "ʜɪɢʜ-ʙᴜʀsᴛ ʜᴇʀᴏᴇs ᴡʜᴏ ᴇʟɪᴍɪɴᴀᴛᴇ ᴘʀɪᴏʀɪᴛʏ ᴛᴀʀɢᴇᴛs."
+        description:
+            "ʜɪɢʜ-ʙᴜʀsᴛ ʜᴇʀᴏᴇs ᴡʜᴏ ᴇʟɪᴍɪɴᴀᴛᴇ ᴘʀɪᴏʀɪᴛʏ ᴛᴀʀɢᴇᴛs."
     },
 
     mage: {
         name: "Mage",
         emoji: "🔮",
-        description: "ᴍᴀɢɪᴄ ᴅᴀᴍᴀɢᴇ ᴀɴᴅ ᴄʀᴏᴡᴅ-ᴄᴏɴᴛʀᴏʟ sᴘᴇᴄɪᴀʟɪsᴛs."
+        description:
+            "ᴍᴀɢɪᴄ ᴅᴀᴍᴀɢᴇ ᴀɴᴅ ᴄʀᴏᴡᴅ-ᴄᴏɴᴛʀᴏʟ sᴘᴇᴄɪᴀʟɪsᴛs."
     },
 
     marksman: {
         name: "Marksman",
         emoji: "🏹",
-        description: "ʀᴀɴɢᴇᴅ ʜᴇʀᴏᴇs ᴘʀᴏᴠɪᴅɪɴɢ ᴄᴏɴsɪsᴛᴇɴᴛ ᴅᴀᴍᴀɢᴇ."
+        description:
+            "ʀᴀɴɢᴇᴅ ʜᴇʀᴏᴇs ᴘʀᴏᴠɪᴅɪɴɢ ᴄᴏɴsɪsᴛᴇɴᴛ ᴅᴀᴍᴀɢᴇ."
     },
 
     support: {
         name: "Support",
         emoji: "🛟",
-        description: "ʜᴇʀᴏᴇs ᴡʜᴏ ᴘʀᴏᴛᴇᴄᴛ, ᴇᴍᴘᴏᴡᴇʀ, ʜᴇᴀʟ, ᴏʀ ᴄᴏɴᴛʀᴏʟ."
+        description:
+            "ʜᴇʀᴏᴇs ᴡʜᴏ ᴘʀᴏᴛᴇᴄᴛ, ᴇᴍᴘᴏᴡᴇʀ, ʜᴇᴀʟ, ᴏʀ ᴄᴏɴᴛʀᴏʟ."
     }
 };
 
@@ -95,37 +101,43 @@ const LANES = {
     clashlane: {
         name: "Clashlane",
         emoji: "<:clashlane:1550553783304589443>",
-        description: "sᴏʟᴏ ʟᴀɴᴇ ꜰᴏʀ ᴅᴜᴇʟɪɴɢ ᴀɴᴅ sᴘʟɪᴛ ᴘᴜsʜɪɴɢ."
+        description:
+            "sᴏʟᴏ ʟᴀɴᴇ ꜰᴏʀ ᴅᴜᴇʟɪɴɢ ᴀɴᴅ sᴘʟɪᴛ ᴘᴜsʜɪɴɢ."
     },
 
     jungler: {
         name: "Jungler",
         emoji: "<:jungler:1550553875562500248>",
-        description: "ᴊᴜɴɢʟᴇ ʀᴇsᴏᴜʀᴄᴇs, ᴏʙᴊᴇᴄᴛɪᴠᴇs, ᴀɴᴅ ᴍᴀᴘ ᴘʀᴇssᴜʀᴇ."
+        description:
+            "ᴊᴜɴɢʟᴇ ʀᴇsᴏᴜʀᴄᴇs, ᴏʙᴊᴇᴄᴛɪᴠᴇs, ᴀɴᴅ ᴍᴀᴘ ᴘʀᴇssᴜʀᴇ."
     },
 
     midlane: {
         name: "Midlane",
         emoji: "<:midlane:1550553955501871124>",
-        description: "ᴡᴀᴠᴇ ᴄʟᴇᴀʀɪɴɢ, ʀᴏᴛᴀᴛɪᴏɴs, ᴀɴᴅ ᴛᴇᴀᴍ ꜰɪɢʜᴛs."
+        description:
+            "ᴡᴀᴠᴇ ᴄʟᴇᴀʀɪɴɢ, ʀᴏᴛᴀᴛɪᴏɴs, ᴀɴᴅ ᴛᴇᴀᴍ ꜰɪɢʜᴛs."
     },
 
     farmlane: {
         name: "Farmlane",
         emoji: "<:farmlane:1550554057448361984>",
-        description: "ɢᴏʟᴅ ꜰᴀʀᴍɪɴɢ ᴀɴᴅ ᴘʀɪᴍᴀʀʏ ᴅᴀᴍᴀɢᴇ."
+        description:
+            "ɢᴏʟᴅ ꜰᴀʀᴍɪɴɢ ᴀɴᴅ ᴘʀɪᴍᴀʀʏ ᴅᴀᴍᴀɢᴇ."
     },
 
     roamer: {
         name: "Roamer",
         emoji: "<:roamer:1550554124473466920>",
-        description: "ᴍᴀᴘ sᴜᴘᴘᴏʀᴛ, ɪɴɪᴛɪᴀᴛɪᴏɴ, ᴀɴᴅ ᴛᴇᴀᴍ ᴀssɪsᴛᴀɴᴄᴇ."
+        description:
+            "ᴍᴀᴘ sᴜᴘᴘᴏʀᴛ, ɪɴɪᴛɪᴀᴛɪᴏɴ, ᴀɴᴅ ᴛᴇᴀᴍ ᴀssɪsᴛᴀɴᴄᴇ."
     },
 
     versatile: {
         name: "Versatile",
         emoji: "<:versatile:1550554190496014366>",
-        description: "ᴄᴏᴍꜰᴏʀᴛᴀʙʟᴇ ᴀᴅᴀᴘᴛɪɴɢ ᴛᴏ ᴍᴜʟᴛɪᴘʟᴇ ʟᴀɴᴇs."
+        description:
+            "ᴄᴏᴍꜰᴏʀᴛᴀʙʟᴇ ᴀᴅᴀᴘᴛɪɴɢ ᴛᴏ ᴍᴜʟᴛɪᴘʟᴇ ʟᴀɴᴇs."
     }
 };
 
@@ -147,26 +159,23 @@ const PORT = Number(process.env.PORT) || 10000;
 
 const server = http.createServer((req, res) => {
 
-    if (req.url === "/health") {
-
-        res.writeHead(200, {
-            "Content-Type": "text/plain; charset=utf-8"
-        });
-
-        return res.end("OK");
-    }
-
     res.writeHead(200, {
         "Content-Type": "text/plain; charset=utf-8"
     });
+
+    if (req.url === "/health") {
+        return res.end("OK");
+    }
 
     res.end("LAMPOON Role & Lane Bot is online.");
 });
 
 server.listen(PORT, "0.0.0.0", () => {
+
     console.log(
         `🌐 Render Health Server running on port ${PORT}`
     );
+
 });
 
 // =====================================================
@@ -179,6 +188,7 @@ function createMainEmbed() {
         .setColor(0x3299DB)
         .setTitle("⚔️ ROLE & 🛣️ LANE SELECTION")
         .setDescription(
+
             "**Your selection automatically updates your LAMPOON Discord roles.**\n\n" +
 
             "◀️ **Role**\n" +
@@ -188,6 +198,7 @@ function createMainEmbed() {
             "Choose one or more Lane Roles to gain their corresponding server colors.\n\n" +
 
             "You can change your Role or Lane selections anytime."
+
         )
         .setFooter({
             text: "LAMPOON • Role & Lane Selection"
@@ -221,148 +232,147 @@ function createMainButtons() {
             .setStyle(ButtonStyle.Secondary)
 
     );
+
 }
 
 // =====================================================
-// ROLE POPUP EMBED
+// POPUP EMBED
 // =====================================================
+
+function createPopupEmbed(
+    member,
+    data,
+    title,
+    section
+) {
+
+    const selected = Object.entries(data)
+        .filter(([id]) => {
+
+            const roleId = ROLE_IDS[id];
+
+            return (
+                roleId &&
+                member.roles.cache.has(roleId)
+            );
+
+        })
+        .map(([, item]) =>
+            `${item.emoji} **${item.name}**`
+        );
+
+    const descriptions = Object.entries(data)
+        .map(([, item]) =>
+            `${item.emoji} **${item.name}**\n> ${item.description}`
+        )
+        .join("\n\n");
+
+    const sectionEmoji =
+        section === "Hero Roles"
+            ? "⚔️"
+            : "🛣️";
+
+    return new EmbedBuilder()
+        .setColor(0x3299DB)
+        .setTitle(title)
+        .setDescription(
+
+            `Select the ${section} you are comfortable playing in-game.\n\n` +
+
+            `╭──────────── ${sectionEmoji} ${section.toUpperCase()} ────────────╮\n\n` +
+
+            descriptions +
+
+            "\n\n╰────────────────────────────────────╯\n\n" +
+
+            "✦ **CURRENTLY SELECTED** ✦\n" +
+
+            (
+                selected.length
+                    ? selected.join(" • ")
+                    : "None selected."
+            )
+
+        )
+        .setFooter({
+            text:
+                "Click an option to add or remove it."
+        });
+
+}
 
 function createRolePopupEmbed(member) {
 
-    const selected = Object.entries(ROLES)
-        .filter(([id]) => {
+    return createPopupEmbed(
+        member,
+        ROLES,
+        "⚔️ CHOOSE YOUR ROLE",
+        "Hero Roles"
+    );
 
-            const roleId = ROLE_IDS[id];
-
-            return (
-                roleId &&
-                member.roles.cache.has(roleId)
-            );
-
-        })
-        .map(([, role]) =>
-            `${role.emoji} **${role.name}**`
-        );
-
-    const descriptions = Object.entries(ROLES)
-        .map(([, role]) =>
-            `${role.emoji} **${role.name}**\n> ${role.description}`
-        )
-        .join("\n\n");
-
-    return new EmbedBuilder()
-        .setColor(0x3299DB)
-        .setTitle("⚔️ CHOOSE YOUR ROLE")
-        .setDescription(
-
-            "Select the Hero Roles you are comfortable playing in-game.\n\n" +
-
-            "╭────────── ⚔️ HERO ROLES ──────────╮\n\n" +
-
-            descriptions +
-
-            "\n\n╰────────────────────────────────────╯\n\n" +
-
-            "✦ **CURRENTLY SELECTED** ✦\n" +
-
-            (
-                selected.length
-                    ? selected.join(" • ")
-                    : "None selected."
-            )
-
-        )
-        .setFooter({
-            text: "Click a role to add or remove it."
-        });
 }
-
-// =====================================================
-// LANE POPUP EMBED
-// =====================================================
 
 function createLanePopupEmbed(member) {
 
-    const selected = Object.entries(LANES)
-        .filter(([id]) => {
+    return createPopupEmbed(
+        member,
+        LANES,
+        "🛣️ CHOOSE YOUR LANE",
+        "Lanes"
+    );
 
-            const roleId = ROLE_IDS[id];
-
-            return (
-                roleId &&
-                member.roles.cache.has(roleId)
-            );
-
-        })
-        .map(([, lane]) =>
-            `${lane.emoji} **${lane.name}**`
-        );
-
-    const descriptions = Object.entries(LANES)
-        .map(([, lane]) =>
-            `${lane.emoji} **${lane.name}**\n> ${lane.description}`
-        )
-        .join("\n\n");
-
-    return new EmbedBuilder()
-        .setColor(0x3299DB)
-        .setTitle("🛣️ CHOOSE YOUR LANE")
-        .setDescription(
-
-            "Select the Lane Roles you are comfortable playing in-game.\n\n" +
-
-            "╭──────────── 🛣️ LANES ────────────╮\n\n" +
-
-            descriptions +
-
-            "\n\n╰────────────────────────────────────╯\n\n" +
-
-            "✦ **CURRENTLY SELECTED** ✦\n" +
-
-            (
-                selected.length
-                    ? selected.join(" • ")
-                    : "None selected."
-            )
-
-        )
-        .setFooter({
-            text: "Click a lane to add or remove it."
-        });
 }
 
 // =====================================================
-// ROLE BUTTONS
-// 3 PER ROW
+// BUTTON CREATOR
 // =====================================================
 
-function createRoleButtons(member) {
+function createOptionButtons(
+    member,
+    data,
+    prefix,
+    perRow
+) {
 
-    const entries = Object.entries(ROLES);
+    const entries =
+        Object.entries(data);
+
     const rows = [];
 
-    for (let i = 0; i < entries.length; i += 3) {
+    for (
+        let i = 0;
+        i < entries.length;
+        i += perRow
+    ) {
 
-        const row = new ActionRowBuilder();
+        const row =
+            new ActionRowBuilder();
 
         entries
-            .slice(i, i + 3)
-            .forEach(([id, role]) => {
+            .slice(i, i + perRow)
+            .forEach(([id, item]) => {
 
-                const roleId = ROLE_IDS[id];
+                const roleId =
+                    ROLE_IDS[id];
 
                 const selected =
                     roleId &&
-                    member.roles.cache.has(roleId);
+                    member.roles.cache.has(
+                        roleId
+                    );
 
                 row.addComponents(
 
                     new ButtonBuilder()
                         .setCustomId(
-                            `lampoon_role_${id}`
+                            `${prefix}${id}`
                         )
-                        .setLabel(role.name)
-                        .setEmoji(role.emoji)
+                        .setLabel(
+                            item.name
+                        )
+                        .setEmoji(
+                            item.emoji
+                        )
                         .setStyle(
                             selected
                                 ? ButtonStyle.Success
@@ -374,7 +384,27 @@ function createRoleButtons(member) {
             });
 
         rows.push(row);
+
     }
+
+    return rows;
+
+}
+
+// =====================================================
+// ROLE BUTTONS
+// 3 PER ROW
+// =====================================================
+
+function createRoleButtons(member) {
+
+    const rows =
+        createOptionButtons(
+            member,
+            ROLES,
+            "lampoon_role_",
+            3
+        );
 
     rows.push(
 
@@ -386,13 +416,16 @@ function createRoleButtons(member) {
                 )
                 .setLabel("Done")
                 .setEmoji("✅")
-                .setStyle(ButtonStyle.Primary)
+                .setStyle(
+                    ButtonStyle.Primary
+                )
 
         )
 
     );
 
     return rows;
+
 }
 
 // =====================================================
@@ -402,43 +435,13 @@ function createRoleButtons(member) {
 
 function createLaneButtons(member) {
 
-    const entries = Object.entries(LANES);
-    const rows = [];
-
-    for (let i = 0; i < entries.length; i += 2) {
-
-        const row = new ActionRowBuilder();
-
-        entries
-            .slice(i, i + 2)
-            .forEach(([id, lane]) => {
-
-                const roleId = ROLE_IDS[id];
-
-                const selected =
-                    roleId &&
-                    member.roles.cache.has(roleId);
-
-                row.addComponents(
-
-                    new ButtonBuilder()
-                        .setCustomId(
-                            `lampoon_lane_${id}`
-                        )
-                        .setLabel(lane.name)
-                        .setEmoji(lane.emoji)
-                        .setStyle(
-                            selected
-                                ? ButtonStyle.Success
-                                : ButtonStyle.Secondary
-                        )
-
-                );
-
-            });
-
-        rows.push(row);
-    }
+    const rows =
+        createOptionButtons(
+            member,
+            LANES,
+            "lampoon_lane_",
+            2
+        );
 
     rows.push(
 
@@ -450,13 +453,16 @@ function createLaneButtons(member) {
                 )
                 .setLabel("Done")
                 .setEmoji("✅")
-                .setStyle(ButtonStyle.Primary)
+                .setStyle(
+                    ButtonStyle.Primary
+                )
 
         )
 
     );
 
     return rows;
+
 }
 
 // =====================================================
@@ -465,7 +471,9 @@ function createLaneButtons(member) {
 
 async function sendLog(embed) {
 
-    if (!LOG_CHANNEL_ID) return;
+    if (!LOG_CHANNEL_ID) {
+        return;
+    }
 
     try {
 
@@ -493,6 +501,7 @@ async function sendLog(embed) {
         );
 
     }
+
 }
 
 // =====================================================
@@ -510,6 +519,7 @@ async function sendOrFindPanel() {
             );
 
             return;
+
         }
 
         console.log(
@@ -528,6 +538,7 @@ async function sendOrFindPanel() {
             );
 
             return;
+
         }
 
         if (!channel.isTextBased()) {
@@ -537,6 +548,7 @@ async function sendOrFindPanel() {
             );
 
             return;
+
         }
 
         const permissions =
@@ -582,14 +594,39 @@ async function sendOrFindPanel() {
 
             );
 
+        // =================================================
+        // UPDATE EXISTING PANEL
+        // =================================================
+
         if (existingPanel) {
 
             console.log(
                 `✅ Existing Role & Lane panel found: ${existingPanel.id}`
             );
 
+            await existingPanel.edit({
+
+                embeds: [
+                    createMainEmbed()
+                ],
+
+                components: [
+                    createMainButtons()
+                ]
+
+            });
+
+            console.log(
+                "✅ Existing panel updated with the latest buttons."
+            );
+
             return;
+
         }
+
+        // =================================================
+        // CREATE NEW PANEL
+        // =================================================
 
         const panel =
             await channel.send({
@@ -617,6 +654,7 @@ async function sendOrFindPanel() {
         console.error(error);
 
     }
+
 }
 
 // =====================================================
@@ -716,219 +754,265 @@ client.on(
     "interactionCreate",
     async interaction => {
 
-        // =================================================
-        // SLASH COMMANDS
-        // =================================================
+        try {
 
-        if (
-            interaction.isChatInputCommand()
-        ) {
-
-            const member =
-                interaction.member;
-
-            // ---------------------------------------------
-            // /my-selection
-            // ---------------------------------------------
+            // =================================================
+            // SLASH COMMANDS
+            // =================================================
 
             if (
-                interaction.commandName ===
-                "my-selection"
+                interaction.isChatInputCommand()
             ) {
 
-                const selectedRoles = [];
-                const selectedLanes = [];
+                const member =
+                    interaction.member;
 
-                for (
-                    const [id, role]
-                    of Object.entries(ROLES)
-                ) {
-
-                    const roleId =
-                        ROLE_IDS[id];
-
-                    if (
-                        roleId &&
-                        member.roles.cache.has(
-                            roleId
-                        )
-                    ) {
-
-                        selectedRoles.push(
-                            `${role.emoji} **${role.name}**`
-                        );
-
-                    }
-
-                }
-
-                for (
-                    const [id, lane]
-                    of Object.entries(LANES)
-                ) {
-
-                    const roleId =
-                        ROLE_IDS[id];
-
-                    if (
-                        roleId &&
-                        member.roles.cache.has(
-                            roleId
-                        )
-                    ) {
-
-                        selectedLanes.push(
-                            `${lane.emoji} **${lane.name}**`
-                        );
-
-                    }
-
-                }
-
-                const embed =
-                    new EmbedBuilder()
-                        .setColor(0x3299DB)
-                        .setTitle(
-                            "📋 YOUR LAMPOON SELECTION"
-                        )
-                        .setDescription(
-
-                            "**⚔️ Hero Roles**\n" +
-
-                            (
-                                selectedRoles.length
-                                    ? selectedRoles.join("\n")
-                                    : "None selected."
-                            ) +
-
-                            "\n\n**🛣️ Lanes**\n" +
-
-                            (
-                                selectedLanes.length
-                                    ? selectedLanes.join("\n")
-                                    : "None selected."
-                            )
-
-                        )
-                        .setFooter({
-                            text:
-                                "LAMPOON • Role & Lane Selection"
-                        });
-
-                return interaction.reply({
-
-                    embeds: [embed],
-
-                    ephemeral: true
-
-                });
-
-            }
-
-            // ---------------------------------------------
-            // /reset-selection
-            // ---------------------------------------------
-
-            if (
-                interaction.commandName ===
-                "reset-selection"
-            ) {
-
-                const rolesToRemove = [];
-
-                for (
-                    const id
-                    of Object.keys(ROLES)
-                ) {
-
-                    const roleId =
-                        ROLE_IDS[id];
-
-                    if (
-                        roleId &&
-                        member.roles.cache.has(
-                            roleId
-                        )
-                    ) {
-
-                        rolesToRemove.push(
-                            roleId
-                        );
-
-                    }
-
-                }
-
-                for (
-                    const id
-                    of Object.keys(LANES)
-                ) {
-
-                    const roleId =
-                        ROLE_IDS[id];
-
-                    if (
-                        roleId &&
-                        member.roles.cache.has(
-                            roleId
-                        )
-                    ) {
-
-                        rolesToRemove.push(
-                            roleId
-                        );
-
-                    }
-
-                }
+                // ---------------------------------------------
+                // /my-selection
+                // ---------------------------------------------
 
                 if (
-                    rolesToRemove.length > 0
+                    interaction.commandName ===
+                    "my-selection"
                 ) {
 
-                    try {
+                    const selectedRoles = [];
 
-                        await member.roles.remove(
-                            rolesToRemove
-                        );
+                    const selectedLanes = [];
 
-                    } catch (error) {
+                    for (
+                        const [id, role]
+                        of Object.entries(ROLES)
+                    ) {
 
-                        console.error(
-                            "❌ Failed to reset roles:",
-                            error
-                        );
+                        const roleId =
+                            ROLE_IDS[id];
 
-                        return interaction.reply({
+                        if (
+                            roleId &&
+                            member.roles.cache.has(
+                                roleId
+                            )
+                        ) {
 
-                            content:
-                                "❌ I couldn't reset your roles. Please check my **Manage Roles** permission and role hierarchy.",
+                            selectedRoles.push(
+                                `${role.emoji} **${role.name}**`
+                            );
 
-                            ephemeral: true
-
-                        });
+                        }
 
                     }
 
+                    for (
+                        const [id, lane]
+                        of Object.entries(LANES)
+                    ) {
+
+                        const roleId =
+                            ROLE_IDS[id];
+
+                        if (
+                            roleId &&
+                            member.roles.cache.has(
+                                roleId
+                            )
+                        ) {
+
+                            selectedLanes.push(
+                                `${lane.emoji} **${lane.name}**`
+                            );
+
+                        }
+
+                    }
+
+                    const embed =
+                        new EmbedBuilder()
+                            .setColor(0x3299DB)
+                            .setTitle(
+                                "📋 YOUR LAMPOON SELECTION"
+                            )
+                            .setDescription(
+
+                                "**⚔️ Hero Roles**\n" +
+
+                                (
+                                    selectedRoles.length
+                                        ? selectedRoles.join("\n")
+                                        : "None selected."
+                                ) +
+
+                                "\n\n**🛣️ Lanes**\n" +
+
+                                (
+                                    selectedLanes.length
+                                        ? selectedLanes.join("\n")
+                                        : "None selected."
+                                )
+
+                            )
+                            .setFooter({
+                                text:
+                                    "LAMPOON • Role & Lane Selection"
+                            });
+
+                    return interaction.reply({
+
+                        embeds: [embed],
+
+                        ephemeral: true
+
+                    });
+
                 }
 
-                const logEmbed =
-                    new EmbedBuilder()
-                        .setColor(0x3299DB)
-                        .setTitle(
-                            "🔄 SELECTION RESET"
-                        )
-                        .setDescription(
-                            `${interaction.user} reset their Role & Lane selection.`
-                        )
-                        .setTimestamp();
+                // ---------------------------------------------
+                // /reset-selection
+                // ---------------------------------------------
 
-                void sendLog(logEmbed);
+                if (
+                    interaction.commandName ===
+                    "reset-selection"
+                ) {
+
+                    const rolesToRemove = [];
+
+                    for (
+                        const id
+                        of Object.keys(ROLES)
+                    ) {
+
+                        const roleId =
+                            ROLE_IDS[id];
+
+                        if (
+                            roleId &&
+                            member.roles.cache.has(
+                                roleId
+                            )
+                        ) {
+
+                            rolesToRemove.push(
+                                roleId
+                            );
+
+                        }
+
+                    }
+
+                    for (
+                        const id
+                        of Object.keys(LANES)
+                    ) {
+
+                        const roleId =
+                            ROLE_IDS[id];
+
+                        if (
+                            roleId &&
+                            member.roles.cache.has(
+                                roleId
+                            )
+                        ) {
+
+                            rolesToRemove.push(
+                                roleId
+                            );
+
+                        }
+
+                    }
+
+                    if (
+                        rolesToRemove.length > 0
+                    ) {
+
+                        try {
+
+                            await member.roles.remove(
+                                rolesToRemove
+                            );
+
+                        } catch (error) {
+
+                            console.error(
+                                "❌ Failed to reset roles:",
+                                error
+                            );
+
+                            return interaction.reply({
+
+                                content:
+                                    "❌ I couldn't reset your roles. Please check my **Manage Roles** permission and role hierarchy.",
+
+                                ephemeral: true
+
+                            });
+
+                        }
+
+                    }
+
+                    const logEmbed =
+                        new EmbedBuilder()
+                            .setColor(0x3299DB)
+                            .setTitle(
+                                "🔄 SELECTION RESET"
+                            )
+                            .setDescription(
+                                `${interaction.user} reset their Role & Lane selection.`
+                            )
+                            .setTimestamp();
+
+                    void sendLog(logEmbed);
+
+                    return interaction.reply({
+
+                        content:
+                            "✅ Your Hero Roles and Lanes have been reset.",
+
+                        ephemeral: true
+
+                    });
+
+                }
+
+            }
+
+            // =================================================
+            // BUTTONS
+            // =================================================
+
+            if (
+                !interaction.isButton()
+            ) {
+                return;
+            }
+
+            // ---------------------------------------------
+            // OPEN ROLE POPUP
+            // ---------------------------------------------
+
+            if (
+                interaction.customId ===
+                "lampoon_open_roles"
+            ) {
+
+                const member =
+                    interaction.member;
 
                 return interaction.reply({
 
-                    content:
-                        "✅ Your Hero Roles and Lanes have been reset.",
+                    embeds: [
+                        createRolePopupEmbed(
+                            member
+                        )
+                    ],
+
+                    components:
+                        createRoleButtons(
+                            member
+                        ),
 
                     ephemeral: true
 
@@ -936,105 +1020,138 @@ client.on(
 
             }
 
-        }
+            // ---------------------------------------------
+            // OPEN LANE POPUP
+            // ---------------------------------------------
 
-        // =================================================
-        // BUTTONS
-        // =================================================
+            if (
+                interaction.customId ===
+                "lampoon_open_lanes"
+            ) {
 
-        if (
-            !interaction.isButton()
-        ) return;
+                const member =
+                    interaction.member;
 
-        // ---------------------------------------------
-        // OPEN ROLE POPUP
-        // ---------------------------------------------
+                return interaction.reply({
 
-        if (
-            interaction.customId ===
-            "lampoon_open_roles"
-        ) {
+                    embeds: [
+                        createLanePopupEmbed(
+                            member
+                        )
+                    ],
 
-            const member =
-                interaction.member;
+                    components:
+                        createLaneButtons(
+                            member
+                        ),
 
-            return interaction.reply({
+                    ephemeral: true
 
-                embeds: [
-                    createRolePopupEmbed(
-                        member
-                    )
-                ],
+                });
 
-                components:
-                    createRoleButtons(
-                        member
-                    ),
+            }
 
-                ephemeral: true
+            // ---------------------------------------------
+            // CLOSE ROLE POPUP
+            // ---------------------------------------------
 
-            });
+            if (
+                interaction.customId ===
+                "lampoon_close_role_popup"
+            ) {
 
-        }
+                return interaction.update({
 
-        // ---------------------------------------------
-        // OPEN LANE POPUP
-        // ---------------------------------------------
+                    content:
+                        "✅ **Role selection saved.** You can click **◀️ Choose Role** again anytime to change it.",
 
-        if (
-            interaction.customId ===
-            "lampoon_open_lanes"
-        ) {
+                    embeds: [],
 
-            const member =
-                interaction.member;
+                    components: []
 
-            return interaction.reply({
+                });
 
-                embeds: [
-                    createLanePopupEmbed(
-                        member
-                    )
-                ],
+            }
 
-                components:
-                    createLaneButtons(
-                        member
-                    ),
+            // ---------------------------------------------
+            // CLOSE LANE POPUP
+            // ---------------------------------------------
 
-                ephemeral: true
+            if (
+                interaction.customId ===
+                "lampoon_close_lane_popup"
+            ) {
 
-            });
+                return interaction.update({
 
-        }
+                    content:
+                        "✅ **Lane selection saved.** You can click **▶️ Choose Lane** again anytime to change it.",
 
-        // ---------------------------------------------
-        // CLOSE ROLE POPUP
-        // ---------------------------------------------
+                    embeds: [],
 
-        if (
-    interaction.customId ===
-    "lampoon_close_lane_popup"
-) {
+                    components: []
 
-    return interaction.update({
-        content: "✅ **Lane selection saved.** You can click **Choose Lane ▶️** again anytime to change it.",
-        embeds: [],
-        components: []
-    });
+                });
 
-        }
+            }
 
-        // ---------------------------------------------
-        // CLOSE LANE POPUP
-        // ---------------------------------------------
+            // ---------------------------------------------
+            // ROLE SELECTION
+            // ---------------------------------------------
 
-        if (
-            interaction.customId ===
-            "lampoon_close_lane_popup"
-        ) {
+            if (
+                interaction.customId.startsWith(
+                    "lampoon_role_"
+                )
+            ) {
 
-            return interaction.update({
+                const id =
+                    interaction.customId.replace(
+                        "lampoon_role_",
+                        ""
+                    );
 
-                content:
-                    "✅ **Lane selection saved.**\nYou can click **Choose
+                const roleId =
+                    ROLE_IDS[id];
+
+                if (!ROLES[id] || !roleId) {
+
+                    return interaction.reply({
+
+                        content:
+                            "❌ This role is not configured correctly.",
+
+                        ephemeral: true
+
+                    });
+
+                }
+
+                const member =
+                    interaction.member;
+
+                const hasRole =
+                    member.roles.cache.has(
+                        roleId
+                    );
+
+                try {
+
+                    if (hasRole) {
+
+                        await member.roles.remove(
+                            roleId
+                        );
+
+                    } else {
+
+                        await member.roles.add(
+                            roleId
+                        );
+
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        "❌ Failed
