@@ -739,197 +739,154 @@ client.on('interactionCreate', async interaction => {
       });
     }
 
-    // ========================================================
-    // ROLE OR LANE BUTTON
-    //
-    // EXACT TOGGLE:
-    //
-    // Click Fighter -> add Fighter
-    // Click Fighter again -> remove Fighter
-    //
-    // Click Roamer -> add Roamer
-    // Click Farmlane -> add Farmlane
-    // Click Clashlane -> add Clashlane
-    // Click Farmlane again -> remove ONLY Farmlane
-    //
-    // NO OTHER ROLE/LANE IS TOUCHED.
-    // ========================================================
+// ========================================================
+// ROLE OR LANE BUTTON
+// ========================================================
 
-    const isRole =
-      interaction.customId.startsWith(
-        'lampoon_role_'
-      );
+const isRole =
+  interaction.customId.startsWith('lampoon_role_');
 
-    const isLane =
-      interaction.customId.startsWith(
-        'lampoon_lane_'
-      );
+const isLane =
+  interaction.customId.startsWith('lampoon_lane_');
 
-    if (!isRole && !isLane) {
-      return;
-    }
+if (!isRole && !isLane) {
+  return;
+}
 
-    // --------------------------------------------------------
-    // GET THE EXACT BUTTON THAT WAS CLICKED
-    // --------------------------------------------------------
+const prefix = isRole
+  ? 'lampoon_role_'
+  : 'lampoon_lane_';
 
-    const prefix = isRole
-      ? 'lampoon_role_'
-      : 'lampoon_lane_';
+const id = interaction.customId.replace(prefix, '');
 
-    const id =
-      interaction.customId.replace(
-        prefix,
-        ''
-      );
+const data = isRole
+  ? ROLES
+  : LANES;
 
-    const data = isRole
-      ? ROLES
-      : LANES;
+const roleId = ROLE_IDS[id];
 
-    const roleId = ROLE_IDS[id];
+if (!data[id] || !roleId) {
+  return interaction.reply({
+    flags: MessageFlags.Ephemeral,
+    content: '❌ This option is not configured correctly.'
+  });
+}
 
-    if (!data[id] || !roleId) {
-      return interaction.reply({
-        flags: MessageFlags.Ephemeral,
-        content:
-          '❌ This option is not configured correctly.'
+// Acknowledge immediately.
+await interaction.deferUpdate();
+
+// ========================================================
+// QUEUE THE EXACT CLICK
+// ========================================================
+
+await queueSelection(
+  interaction.user.id,
+  async () => {
+
+    // ----------------------------------------------------
+    // FETCH CURRENT MEMBER ONCE
+    // ----------------------------------------------------
+
+    const member =
+      await interaction.guild.members.fetch({
+        user: interaction.user.id,
+        force: true
       });
+
+    // ----------------------------------------------------
+    // CHECK THE EXACT BUTTON'S ROLE
+    // ----------------------------------------------------
+
+    const isSelected =
+      member.roles.cache.has(roleId);
+
+    // ----------------------------------------------------
+    // TOGGLE ONLY THAT ROLE
+    // ----------------------------------------------------
+
+    let updatedMember;
+
+    if (isSelected) {
+      updatedMember =
+        await member.roles.remove(roleId);
+    } else {
+      updatedMember =
+        await member.roles.add(roleId);
     }
 
-    // --------------------------------------------------------
-    // ACKNOWLEDGE THE CLICK IMMEDIATELY
+    // ----------------------------------------------------
+    // IMPORTANT:
+    // DO NOT force-fetch Discord again here.
     //
-    // This prevents Discord's interaction timeout while
-    // the queue is processing previous finger taps.
-    // --------------------------------------------------------
+    // Discord.js returns the updated GuildMember from
+    // add/remove. This avoids detecting an old/stale role
+    // state immediately after the API change.
+    // ----------------------------------------------------
 
-    await interaction.deferUpdate();
+    const freshMember = updatedMember || member;
 
-    // --------------------------------------------------------
-    // QUEUE THIS EXACT CLICK
-    // --------------------------------------------------------
+    // ----------------------------------------------------
+    // UPDATE THE SAME EPHEMERAL POPUP
+    // ----------------------------------------------------
 
-    await queueSelection(
-      interaction.user.id,
-      async () => {
+    await interaction.editReply({
+      embeds: [
+        isRole
+          ? roleEmbed(freshMember)
+          : laneEmbed(freshMember)
+      ],
 
-        // ----------------------------------------------------
-        // ALWAYS FETCH THE LATEST DISCORD ROLE STATE
-        // ----------------------------------------------------
+      components:
+        isRole
+          ? roleButtons(freshMember)
+          : laneButtons(freshMember)
+    });
 
-        const member =
-          await interaction.guild.members.fetch({
-            user: interaction.user.id,
-            force: true
-          });
+    // ----------------------------------------------------
+    // LOG
+    // ----------------------------------------------------
 
-        // ----------------------------------------------------
-        // CHECK ONLY THE ROLE BELONGING TO THE BUTTON
-        // THAT WAS CLICKED.
-        // ----------------------------------------------------
-
-        const isSelected =
-          member.roles.cache.has(roleId);
-
-        if (isSelected) {
-
-          // ==================================================
-          // SECOND CLICK
-          // REMOVE ONLY THIS EXACT ROLE
-          // ==================================================
-
-          await member.roles.remove(
-            roleId
-          );
-
-        } else {
-
-          // ==================================================
-          // FIRST CLICK
-          // ADD ONLY THIS EXACT ROLE
-          //
-          // Other selected roles/lanes stay untouched.
-          // ==================================================
-
-          await member.roles.add(
-            roleId
-          );
-        }
-
-        // ----------------------------------------------------
-        // FETCH AGAIN AFTER THE ROLE CHANGE
-        // ----------------------------------------------------
-
-        const freshMember =
-          await interaction.guild.members.fetch({
-            user: interaction.user.id,
-            force: true
-          });
-
-        // ----------------------------------------------------
-        // UPDATE THE SAME EPHEMERAL POPUP
-        // ----------------------------------------------------
-
-        await interaction.editReply({
-          embeds: [
-            isRole
-              ? roleEmbed(freshMember)
-              : laneEmbed(freshMember)
-          ],
-
-          components:
-            isRole
-              ? roleButtons(freshMember)
-              : laneButtons(freshMember)
-        });
-
-        // ----------------------------------------------------
-        // LOG AFTER UI UPDATE
-        // ----------------------------------------------------
-
-        const selected =
-          Object.entries(data)
-            .filter(
-              ([key]) =>
-                ROLE_IDS[key] &&
-                freshMember.roles.cache.has(
-                  ROLE_IDS[key]
-                )
+    const selected =
+      Object.entries(data)
+        .filter(
+          ([key]) =>
+            ROLE_IDS[key] &&
+            freshMember.roles.cache.has(
+              ROLE_IDS[key]
             )
-            .map(
-              ([, option]) =>
-                option.name
-            );
-
-        void sendLog(
-          new EmbedBuilder()
-            .setColor(
-              isRole
-                ? 0xC0C0C0
-                : 0xD4AF37
-            )
-            .setTitle(
-              isRole
-                ? '⚔️ HERO ROLE UPDATED'
-                : '🛣️ LANE UPDATED'
-            )
-            .setDescription(
-              `${interaction.user} updated their ${
-                isRole
-                  ? 'Hero Role'
-                  : 'Lane'
-              } selection.\n\n` +
-              `**Selected:** ${
-                selected.length
-                  ? selected.join(', ')
-                  : 'None'
-              }`
-            )
-            .setTimestamp()
+        )
+        .map(
+          ([, option]) => option.name
         );
-      }
+
+    void sendLog(
+      new EmbedBuilder()
+        .setColor(
+          isRole
+            ? 0xC0C0C0
+            : 0xD4AF37
+        )
+        .setTitle(
+          isRole
+            ? '⚔️ HERO ROLE UPDATED'
+            : '🛣️ LANE UPDATED'
+        )
+        .setDescription(
+          `${interaction.user} updated their ${
+            isRole
+              ? 'Hero Role'
+              : 'Lane'
+          } selection.\n\n` +
+          `**Selected:** ${
+            selected.length
+              ? selected.join(', ')
+              : 'None'
+          }`
+        )
+        .setTimestamp()
     );
+  }
+);
 
   } catch (error) {
 
