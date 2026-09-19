@@ -515,61 +515,109 @@ async function safeInteractionError(
 async function sendOrFindPanel() {
   try {
     if (!ROLE_LANE_CHANNEL_ID) {
+      console.error('❌ ROLE_LANE_CHANNEL_ID is missing.');
+      return;
+    }
+
+    const channel = await client.channels.fetch(
+      ROLE_LANE_CHANNEL_ID,
+      { force: true }
+    );
+
+    if (!channel) {
       console.error(
-        '❌ ROLE_LANE_CHANNEL_ID is missing.'
+        `❌ Cannot find channel: ${ROLE_LANE_CHANNEL_ID}`
       );
-
       return;
     }
-
-    const channel =
-      await client.channels.fetch(
-        ROLE_LANE_CHANNEL_ID
-      );
-
-    if (
-      !channel ||
-      !channel.isTextBased()
-    ) {
-      console.error(
-        '❌ Role & Lane channel is invalid.'
-      );
-
-      return;
-    }
-
-    const messages =
-      await channel.messages.fetch({
-        limit: 100
-      });
-
-    const oldPanel =
-      messages.find(message =>
-        message.author.id === client.user.id &&
-        message.embeds[0]?.title ===
-          '⚔️ ROLE & 🛣️ LANE SELECTION'
-      );
-
-    if (oldPanel) {
-      console.log(
-        `✅ Existing Role & Lane panel found: ${oldPanel.id}`
-      );
-
-      return;
-    }
-
-    const panel =
-      await channel.send({
-        embeds: [
-          mainEmbed()
-        ],
-        components: [
-          mainButtons()
-        ]
-      });
 
     console.log(
-      `✅ New Role & Lane panel sent: ${panel.id}`
+      `📍 Role & Lane channel: #${channel.name} (${channel.id})`
+    );
+
+    if (!channel.isTextBased()) {
+      console.error(
+        `❌ Channel ${channel.id} is not a text-based channel.`
+      );
+      return;
+    }
+
+    /* Check permissions */
+    const permissions = channel.permissionsFor(client.user);
+
+    if (!permissions) {
+      console.error(
+        '❌ Could not determine bot permissions in this channel.'
+      );
+      return;
+    }
+
+    if (!permissions.has('ViewChannel')) {
+      console.error(
+        '❌ Bot does not have View Channel permission.'
+      );
+      return;
+    }
+
+    if (!permissions.has('SendMessages')) {
+      console.error(
+        '❌ Bot does not have Send Messages permission.'
+      );
+      return;
+    }
+
+    if (!permissions.has('EmbedLinks')) {
+      console.error(
+        '❌ Bot does not have Embed Links permission.'
+      );
+      return;
+    }
+
+    console.log(
+      '✅ Bot has View Channel, Send Messages and Embed Links permissions.'
+    );
+
+    /* Fetch recent messages */
+    const messages = await channel.messages.fetch({
+      limit: 100
+    });
+
+    const existingPanel = messages.find(message =>
+      message.author.id === client.user.id &&
+      message.embeds?.some(
+        embed =>
+          embed.title ===
+          '⚔️ ROLE & 🛣️ LANE SELECTION'
+      )
+    );
+
+    if (existingPanel) {
+      console.log(
+        `✅ Existing Role & Lane panel found: ${existingPanel.id}`
+      );
+
+      console.log(
+        `📍 Panel is in #${channel.name} (${channel.id})`
+      );
+
+      return;
+    }
+
+    console.log(
+      '📤 No existing panel found. Sending new panel...'
+    );
+
+    const panel = await channel.send({
+      embeds: [
+        mainEmbed()
+      ],
+      components: [
+        mainButtons()
+      ]
+    });
+
+    console.log(
+      `✅ Role & Lane panel sent successfully: ${panel.id}`
     );
 
   } catch (error) {
