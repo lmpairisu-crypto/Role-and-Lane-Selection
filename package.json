@@ -1,12 +1,13 @@
 {
   "name": "lampoon-role-lane-bot",
   "version": "1.0.0",
+  "description": "LAMPOON Role & Lane Selection Discord Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "discord.js": "^14.25.1",
-    "express": "^5.1.0"
+    "dotenv": "^16.6.1"
   }
 }
