@@ -15,11 +15,6 @@ const {
   Routes,
 } = require('discord.js');
 
-
-/* =========================================================
-   CONFIG
-========================================================= */
-
 const {
   DISCORD_TOKEN,
   CLIENT_ID,
@@ -43,30 +38,7 @@ const {
   ROLE_VERSATILE,
 } = process.env;
 
-
-/* =========================================================
-   CLIENT
-========================================================= */
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-  ],
-  partials: [Partials.GuildMember],
-});
-
-
-/* =========================================================
-   AVISALA
-========================================================= */
-
 const AVISALA = '<a:Avisala:1542448826265243660>';
-
-
-/* =========================================================
-   ROLE DATA
-========================================================= */
 
 const ROLES = [
   {
@@ -113,11 +85,6 @@ const ROLES = [
   },
 ];
 
-
-/* =========================================================
-   LANE DATA
-========================================================= */
-
 const LANES = [
   {
     key: 'clashlane',
@@ -163,26 +130,26 @@ const LANES = [
   },
 ];
 
-
-/* =========================================================
-   HELPERS
-========================================================= */
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+  ],
+  partials: [Partials.GuildMember],
+});
 
 function getRoleId(item) {
   return item.env;
 }
 
-
 function getSelectedItems(member, items) {
   return items.filter(item => {
     const roleId = getRoleId(item);
-
     if (!roleId) return false;
 
     return member.roles.cache.has(roleId);
   });
 }
-
 
 function selectedText(member, items) {
   const selected = getSelectedItems(member, items);
@@ -196,11 +163,6 @@ function selectedText(member, items) {
     .join('\n');
 }
 
-
-/* =========================================================
-   MAIN PUBLIC EMBED
-========================================================= */
-
 function mainEmbed() {
   return new EmbedBuilder()
     .setColor(0x3299DB)
@@ -209,15 +171,15 @@ function mainEmbed() {
       [
         `${AVISALA} **ROLE & LANE GUIDE**`,
         '',
-        `**Your selection automatically updates your LAMPOON Discord roles.**`,
+        '**Your selection automatically updates your LAMPOON Discord roles.**',
         '',
-        `◀ **Role**`,
-        `Choose one or more Hero Roles you are comfortable playing in-game.`,
+        '◀ **Role**',
+        'Choose one or more Hero Roles you are comfortable playing in-game.',
         '',
-        `▶ **Lane**`,
-        `Choose one or more Lane Roles to gain their corresponding server colors.`,
+        '▶ **Lane**',
+        'Choose one or more Lane Roles to gain their corresponding server colors.',
         '',
-        `You can change your Role or Lane selections anytime.`,
+        'You can change your Role or Lane selections anytime.',
       ].join('\n')
     )
     .setThumbnail(LAMPOON_GIF_URL)
@@ -225,11 +187,6 @@ function mainEmbed() {
       text: 'LAMPOON • Role & Lane Selection',
     });
 }
-
-
-/* =========================================================
-   MAIN BUTTONS
-========================================================= */
 
 function mainButtons() {
   return [
@@ -249,16 +206,11 @@ function mainButtons() {
       new ButtonBuilder()
         .setCustomId('lampoon_current')
         .setLabel('My Selection')
-        .setEmoji('✦')
+        .setEmoji('🔎')
         .setStyle(ButtonStyle.Primary),
     ),
   ];
 }
-
-
-/* =========================================================
-   ROLE EMBED
-========================================================= */
 
 function roleEmbed() {
   const description = [
@@ -294,11 +246,6 @@ function roleEmbed() {
     .setDescription(description.join('\n'));
 }
 
-
-/* =========================================================
-   LANE EMBED
-========================================================= */
-
 function laneEmbed() {
   const description = [
     `${AVISALA} **LANE GUIDE**`,
@@ -333,11 +280,6 @@ function laneEmbed() {
     .setDescription(description.join('\n'));
 }
 
-
-/* =========================================================
-   ROLE SELECT MENU
-========================================================= */
-
 function roleMenu(member) {
   const selected = getSelectedItems(member, ROLES);
 
@@ -353,19 +295,12 @@ function roleMenu(member) {
           .setDescription(role.description)
           .setValue(role.key)
           .setEmoji(role.emoji)
-          .setDefault(
-            selected.some(x => x.key === role.key)
-          )
+          .setDefault(selected.some(x => x.key === role.key))
       )
     );
 
   return new ActionRowBuilder().addComponents(menu);
 }
-
-
-/* =========================================================
-   LANE SELECT MENU
-========================================================= */
 
 function laneMenu(member) {
   const selected = getSelectedItems(member, LANES);
@@ -381,19 +316,12 @@ function laneMenu(member) {
           .setLabel(lane.name)
           .setDescription(lane.description)
           .setValue(lane.key)
-          .setDefault(
-            selected.some(x => x.key === lane.key)
-          )
+          .setDefault(selected.some(x => x.key === lane.key))
       )
     );
 
   return new ActionRowBuilder().addComponents(menu);
 }
-
-
-/* =========================================================
-   PRIVATE CURRENT SELECTION
-========================================================= */
 
 function currentSelectionEmbed(member) {
   return new EmbedBuilder()
@@ -414,11 +342,6 @@ function currentSelectionEmbed(member) {
       text: 'LAMPOON • Role & Lane Selection',
     });
 }
-
-
-/* =========================================================
-   PRIVATE CURRENT SELECTION BUTTONS
-========================================================= */
 
 function currentSelectionButtons() {
   return [
@@ -459,11 +382,6 @@ function currentSelectionButtons() {
   ];
 }
 
-
-/* =========================================================
-   ROLE PANEL BUTTONS
-========================================================= */
-
 function rolePanelButtons() {
   return [
     new ActionRowBuilder().addComponents(
@@ -481,11 +399,6 @@ function rolePanelButtons() {
     ),
   ];
 }
-
-
-/* =========================================================
-   LANE PANEL BUTTONS
-========================================================= */
 
 function lanePanelButtons() {
   return [
@@ -505,11 +418,6 @@ function lanePanelButtons() {
   ];
 }
 
-
-/* =========================================================
-   LOG EMBEDS
-========================================================= */
-
 function roleLogEmbed(member, action, roleName) {
   return new EmbedBuilder()
     .setColor(0xC0C0C0)
@@ -523,7 +431,6 @@ function roleLogEmbed(member, action, roleName) {
     )
     .setTimestamp();
 }
-
 
 function laneLogEmbed(member, action, laneName) {
   return new EmbedBuilder()
@@ -539,66 +446,33 @@ function laneLogEmbed(member, action, laneName) {
     .setTimestamp();
 }
 
-
-/* =========================================================
-   SEND ROLE LOG
-========================================================= */
-
 async function sendRoleLog(member, action, roleName) {
   try {
-    const channel = member.guild.channels.cache.get(
-      LOG_CHANNEL_ID
-    );
+    const channel = member.guild.channels.cache.get(LOG_CHANNEL_ID);
 
     if (!channel) return;
 
     await channel.send({
-      embeds: [
-        roleLogEmbed(
-          member,
-          action,
-          roleName
-        ),
-      ],
+      embeds: [roleLogEmbed(member, action, roleName)],
     });
-
   } catch (error) {
     console.error('Role log error:', error);
   }
 }
 
-
-/* =========================================================
-   SEND LANE LOG
-========================================================= */
-
 async function sendLaneLog(member, action, laneName) {
   try {
-    const channel = member.guild.channels.cache.get(
-      LOG_CHANNEL_ID
-    );
+    const channel = member.guild.channels.cache.get(LOG_CHANNEL_ID);
 
     if (!channel) return;
 
     await channel.send({
-      embeds: [
-        laneLogEmbed(
-          member,
-          action,
-          laneName
-        ),
-      ],
+      embeds: [laneLogEmbed(member, action, laneName)],
     });
-
   } catch (error) {
     console.error('Lane log error:', error);
   }
 }
-
-
-/* =========================================================
-   UPDATE ROLE SELECTION
-========================================================= */
 
 async function updateRoleSelection(member, values) {
   const selectedKeys = new Set(values);
@@ -613,30 +487,15 @@ async function updateRoleSelection(member, values) {
 
     if (shouldHaveRole && !hasRole) {
       await member.roles.add(roleId);
-
-      await sendRoleLog(
-        member,
-        'Added',
-        role.name
-      );
+      await sendRoleLog(member, 'Added', role.name);
     }
 
     if (!shouldHaveRole && hasRole) {
       await member.roles.remove(roleId);
-
-      await sendRoleLog(
-        member,
-        'Removed',
-        role.name
-      );
+      await sendRoleLog(member, 'Removed', role.name);
     }
   }
 }
-
-
-/* =========================================================
-   UPDATE LANE SELECTION
-========================================================= */
 
 async function updateLaneSelection(member, values) {
   const selectedKeys = new Set(values);
@@ -651,30 +510,15 @@ async function updateLaneSelection(member, values) {
 
     if (shouldHaveRole && !hasRole) {
       await member.roles.add(roleId);
-
-      await sendLaneLog(
-        member,
-        'Added',
-        lane.name
-      );
+      await sendLaneLog(member, 'Added', lane.name);
     }
 
     if (!shouldHaveRole && hasRole) {
       await member.roles.remove(roleId);
-
-      await sendLaneLog(
-        member,
-        'Removed',
-        lane.name
-      );
+      await sendLaneLog(member, 'Removed', lane.name);
     }
   }
 }
-
-
-/* =========================================================
-   CLEAR ALL ROLES
-========================================================= */
 
 async function clearAllRoles(member) {
   for (const role of ROLES) {
@@ -684,20 +528,10 @@ async function clearAllRoles(member) {
 
     if (member.roles.cache.has(roleId)) {
       await member.roles.remove(roleId);
-
-      await sendRoleLog(
-        member,
-        'Removed',
-        role.name
-      );
+      await sendRoleLog(member, 'Removed', role.name);
     }
   }
 }
-
-
-/* =========================================================
-   CLEAR ALL LANES
-========================================================= */
 
 async function clearAllLanes(member) {
   for (const lane of LANES) {
@@ -707,20 +541,10 @@ async function clearAllLanes(member) {
 
     if (member.roles.cache.has(roleId)) {
       await member.roles.remove(roleId);
-
-      await sendLaneLog(
-        member,
-        'Removed',
-        lane.name
-      );
+      await sendLaneLog(member, 'Removed', lane.name);
     }
   }
 }
-
-
-/* =========================================================
-   SEND / FIND PUBLIC PANEL
-========================================================= */
 
 async function sendOrFindPanel() {
   const guild = client.guilds.cache.get(GUILD_ID);
@@ -730,9 +554,7 @@ async function sendOrFindPanel() {
     return;
   }
 
-  const channel = guild.channels.cache.get(
-    ROLE_LANE_CHANNEL_ID
-  );
+  const channel = guild.channels.cache.get(ROLE_LANE_CHANNEL_ID);
 
   if (!channel) {
     console.error('Role/Lane channel not found.');
@@ -747,15 +569,12 @@ async function sendOrFindPanel() {
     message =>
       message.author.id === client.user.id &&
       message.embeds.length &&
-      message.embeds[0].title ===
-        '🎮 LAMPOON ROLE & LANE SELECTION'
+      message.embeds[0].title === '🎮 LAMPOON ROLE & LANE SELECTION'
   );
 
   if (existing) {
     await existing.edit({
-      embeds: [
-        mainEmbed(),
-      ],
+      embeds: [mainEmbed()],
       components: mainButtons(),
     });
 
@@ -764,19 +583,12 @@ async function sendOrFindPanel() {
   }
 
   await channel.send({
-    embeds: [
-      mainEmbed(),
-    ],
+    embeds: [mainEmbed()],
     components: mainButtons(),
   });
 
   console.log('LAMPOON panel created.');
 }
-
-
-/* =========================================================
-   SLASH COMMANDS
-========================================================= */
 
 const commands = [
   new SlashCommandBuilder()
@@ -792,11 +604,6 @@ const commands = [
     ),
 ].map(command => command.toJSON());
 
-
-/* =========================================================
-   REGISTER COMMANDS
-========================================================= */
-
 async function registerCommands() {
   try {
     const rest = new REST({
@@ -804,375 +611,93 @@ async function registerCommands() {
     }).setToken(DISCORD_TOKEN);
 
     await rest.put(
-      Routes.applicationGuildCommands(
-        CLIENT_ID,
-        GUILD_ID
-      ),
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       {
         body: commands,
       }
     );
 
     console.log('Slash commands registered.');
-
   } catch (error) {
-    console.error(
-      'Command registration error:',
-      error
-    );
+    console.error('Command registration error:', error);
   }
 }
 
+client.on('interactionCreate', async interaction => {
+  try {
+    if (interaction.isChatInputCommand()) {
+      if (interaction.commandName === 'my-selection') {
+        const member = interaction.member;
 
-/* =========================================================
-   INTERACTION HANDLER
-========================================================= */
+        await interaction.reply({
+          embeds: [currentSelectionEmbed(member)],
+          components: currentSelectionButtons(),
+          ephemeral: true,
+        });
 
-client.on(
-  'interactionCreate',
-  async interaction => {
-
-    try {
-
-      /* ===================================================
-         SLASH COMMANDS
-      =================================================== */
-
-      if (interaction.isChatInputCommand()) {
-
-        /* -----------------------------------------------
-           MY SELECTION
-        ----------------------------------------------- */
-
-        if (
-          interaction.commandName ===
-          'my-selection'
-        ) {
-
-          await interaction.reply({
-            embeds: [
-              currentSelectionEmbed(
-                interaction.member
-              ),
-            ],
-            components:
-              currentSelectionButtons(),
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           RESET SELECTION
-        ----------------------------------------------- */
-
-        if (
-          interaction.commandName ===
-          'reset-selection'
-        ) {
-
-          await clearAllRoles(
-            interaction.member
-          );
-
-          await clearAllLanes(
-            interaction.member
-          );
-
-          await interaction.reply({
-            embeds: [
-              currentSelectionEmbed(
-                interaction.member
-              ),
-            ],
-            components:
-              currentSelectionButtons(),
-            ephemeral: true,
-          });
-
-          return;
-        }
+        return;
       }
 
+      if (interaction.commandName === 'reset-selection') {
+        const member = interaction.member;
 
-      /* ===================================================
-         BUTTONS
-      =================================================== */
+        await clearAllRoles(member);
+        await clearAllLanes(member);
 
-      if (interaction.isButton()) {
+        await interaction.reply({
+          embeds: [currentSelectionEmbed(member)],
+          components: currentSelectionButtons(),
+          ephemeral: true,
+        });
 
-        /* -----------------------------------------------
-           OPEN ROLE
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_role'
-        ) {
-
-          await interaction.reply({
-            embeds: [
-              roleEmbed(),
-            ],
-            components: [
-              roleMenu(
-                interaction.member
-              ),
-              ...rolePanelButtons(),
-            ],
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           OPEN LANE
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_lane'
-        ) {
-
-          await interaction.reply({
-            embeds: [
-              laneEmbed(),
-            ],
-            components: [
-              laneMenu(
-                interaction.member
-              ),
-              ...lanePanelButtons(),
-            ],
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           CURRENT SELECTION
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_current'
-        ) {
-
-          await interaction.reply({
-            embeds: [
-              currentSelectionEmbed(
-                interaction.member
-              ),
-            ],
-            components:
-              currentSelectionButtons(),
-            ephemeral: true,
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           SWITCH ROLE
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_switch_role'
-        ) {
-
-          await interaction.update({
-            embeds: [
-              roleEmbed(),
-            ],
-            components: [
-              roleMenu(
-                interaction.member
-              ),
-              ...rolePanelButtons(),
-            ],
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           SWITCH LANE
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_switch_lane'
-        ) {
-
-          await interaction.update({
-            embeds: [
-              laneEmbed(),
-            ],
-            components: [
-              laneMenu(
-                interaction.member
-              ),
-              ...lanePanelButtons(),
-            ],
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           ROLE DONE
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_role_done'
-        ) {
-
-          await interaction.update({
-            embeds: [
-              currentSelectionEmbed(
-                interaction.member
-              ),
-            ],
-            components:
-              currentSelectionButtons(),
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           LANE DONE
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_lane_done'
-        ) {
-
-          await interaction.update({
-            embeds: [
-              currentSelectionEmbed(
-                interaction.member
-              ),
-            ],
-            components:
-              currentSelectionButtons(),
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           CLEAR ROLES
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_clear_roles'
-        ) {
-
-          await clearAllRoles(
-            interaction.member
-          );
-
-          await interaction.update({
-            embeds: [
-              currentSelectionEmbed(
-                interaction.member
-              ),
-            ],
-            components:
-              currentSelectionButtons(),
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           CLEAR LANES
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_clear_lanes'
-        ) {
-
-          await clearAllLanes(
-            interaction.member
-          );
-
-          await interaction.update({
-            embeds: [
-              currentSelectionEmbed(
-                interaction.member
-              ),
-            ],
-            components:
-              currentSelectionButtons(),
-          });
-
-          return;
-        }
-
-
-        /* -----------------------------------------------
-           CLOSE
-        ----------------------------------------------- */
-
-        if (
-          interaction.customId ===
-          'lampoon_close'
-        ) {
-
-          await interaction.update({
-            content:
-              'Selection panel closed.',
-            embeds: [],
-            components: [],
-          });
-
-          return;
-        }
+        return;
       }
+    }
 
+    if (interaction.isButton()) {
+      const member = interaction.member;
 
-      /* ===================================================
-         ROLE SELECT MENU
-      =================================================== */
-
-      if (
-        interaction.isStringSelectMenu() &&
-        interaction.customId ===
-          'lampoon_role_select'
-      ) {
-
-        await updateRoleSelection(
-          interaction.member,
-          interaction.values
-        );
-
-        await interaction.update({
-          embeds: [
-            roleEmbed(),
-          ],
+      if (interaction.customId === 'lampoon_role') {
+        await interaction.reply({
+          embeds: [roleEmbed()],
           components: [
-            roleMenu(
-              interaction.member
-            ),
+            roleMenu(member),
+            ...rolePanelButtons(),
+          ],
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      if (interaction.customId === 'lampoon_lane') {
+        await interaction.reply({
+          embeds: [laneEmbed()],
+          components: [
+            laneMenu(member),
+            ...lanePanelButtons(),
+          ],
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      if (interaction.customId === 'lampoon_current') {
+        await interaction.reply({
+          embeds: [currentSelectionEmbed(member)],
+          components: currentSelectionButtons(),
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      if (interaction.customId === 'lampoon_switch_role') {
+        await interaction.update({
+          embeds: [roleEmbed()],
+          components: [
+            roleMenu(member),
             ...rolePanelButtons(),
           ],
         });
@@ -1180,30 +705,11 @@ client.on(
         return;
       }
 
-
-      /* ===================================================
-         LANE SELECT MENU
-      =================================================== */
-
-      if (
-        interaction.isStringSelectMenu() &&
-        interaction.customId ===
-          'lampoon_lane_select'
-      ) {
-
-        await updateLaneSelection(
-          interaction.member,
-          interaction.values
-        );
-
+      if (interaction.customId === 'lampoon_switch_lane') {
         await interaction.update({
-          embeds: [
-            laneEmbed(),
-          ],
+          embeds: [laneEmbed()],
           components: [
-            laneMenu(
-              interaction.member
-            ),
+            laneMenu(member),
             ...lanePanelButtons(),
           ],
         });
@@ -1211,62 +717,118 @@ client.on(
         return;
       }
 
-    } catch (error) {
+      if (interaction.customId === 'lampoon_role_done') {
+        await interaction.update({
+          embeds: [currentSelectionEmbed(member)],
+          components: currentSelectionButtons(),
+        });
 
-      console.error(
-        'Interaction error:',
-        error
-      );
+        return;
+      }
 
-      try {
+      if (interaction.customId === 'lampoon_lane_done') {
+        await interaction.update({
+          embeds: [currentSelectionEmbed(member)],
+          components: currentSelectionButtons(),
+        });
 
-        if (
-          interaction.replied ||
-          interaction.deferred
-        ) {
+        return;
+      }
 
-          await interaction.followUp({
-            content:
-              '❌ Something went wrong while processing your selection.',
-            ephemeral: true,
-          });
+      if (interaction.customId === 'lampoon_clear_roles') {
+        await clearAllRoles(member);
 
-        } else {
+        await interaction.update({
+          embeds: [currentSelectionEmbed(member)],
+          components: currentSelectionButtons(),
+        });
 
-          await interaction.reply({
-            content:
-              '❌ Something went wrong while processing your selection.',
-            ephemeral: true,
-          });
+        return;
+      }
 
-        }
+      if (interaction.customId === 'lampoon_clear_lanes') {
+        await clearAllLanes(member);
 
-      } catch {}
+        await interaction.update({
+          embeds: [currentSelectionEmbed(member)],
+          components: currentSelectionButtons(),
+        });
+
+        return;
+      }
+
+      if (interaction.customId === 'lampoon_close') {
+        await interaction.update({
+          content: 'Selection panel closed.',
+          embeds: [],
+          components: [],
+        });
+
+        return;
+      }
+    }
+
+    if (interaction.isStringSelectMenu()) {
+      const member = interaction.member;
+
+      if (interaction.customId === 'lampoon_role_select') {
+        await updateRoleSelection(member, interaction.values);
+
+        await interaction.update({
+          embeds: [roleEmbed()],
+          components: [
+            roleMenu(member),
+            ...rolePanelButtons(),
+          ],
+        });
+
+        return;
+      }
+
+      if (interaction.customId === 'lampoon_lane_select') {
+        await updateLaneSelection(member, interaction.values);
+
+        await interaction.update({
+          embeds: [laneEmbed()],
+          components: [
+            laneMenu(member),
+            ...lanePanelButtons(),
+          ],
+        });
+
+        return;
+      }
+    }
+  } catch (error) {
+    console.error('Interaction error:', error);
+
+    try {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: 'Something went wrong. Please try again.',
+          ephemeral: true,
+        });
+      } else {
+        await interaction.reply({
+          content: 'Something went wrong. Please try again.',
+          ephemeral: true,
+        });
+      }
+    } catch (replyError) {
+      console.error('Error response failed:', replyError);
     }
   }
-);
+});
 
+client.once('clientReady', async () => {
+  console.log(`Logged in as ${client.user.tag}`);
 
-/* =========================================================
-   READY
-========================================================= */
+  await registerCommands();
+  await sendOrFindPanel();
+});
 
-client.once(
-  'ready',
-  async () => {
-
-    console.log(
-      `Logged in as ${client.user.tag}`
-    );
-
-    await registerCommands();
-    await sendOrFindPanel();
-  }
-);
-
-
-/* =========================================================
-   LOGIN
-========================================================= */
+client.on('error', error => {
+  console.error('Discord client error:', error);
+});
 
 client.login(DISCORD_TOKEN);
