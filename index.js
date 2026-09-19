@@ -1,5 +1,33 @@
 require('dotenv').config();
 
+// ==========================================
+// RENDER HEALTH CHECK
+// ==========================================
+
+const http = require('http');
+
+const PORT = Number(process.env.PORT) || 10000;
+
+const server = http.createServer((req, res) => {
+  if (req.url === '/health') {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+    });
+
+    return res.end('OK');
+  }
+
+  res.writeHead(200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+  });
+
+  res.end('LAMPOON Role & Lane Bot is online.');
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌐 Health server running on port ${PORT}`);
+});
+
 const {
   Client,
   GatewayIntentBits,
