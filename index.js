@@ -13,6 +13,7 @@ const {
   SlashCommandBuilder,
   REST,
   Routes,
+  MessageFlags,
 } = require('discord.js');
 
 const {
@@ -145,6 +146,7 @@ function getRoleId(item) {
 function getSelectedItems(member, items) {
   return items.filter(item => {
     const roleId = getRoleId(item);
+
     if (!roleId) return false;
 
     return member.roles.cache.has(roleId);
@@ -632,7 +634,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({
           embeds: [currentSelectionEmbed(member)],
           components: currentSelectionButtons(),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -647,7 +649,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({
           embeds: [currentSelectionEmbed(member)],
           components: currentSelectionButtons(),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -664,7 +666,7 @@ client.on('interactionCreate', async interaction => {
             roleMenu(member),
             ...rolePanelButtons(),
           ],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -677,7 +679,7 @@ client.on('interactionCreate', async interaction => {
             laneMenu(member),
             ...lanePanelButtons(),
           ],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -687,7 +689,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({
           embeds: [currentSelectionEmbed(member)],
           components: currentSelectionButtons(),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -806,12 +808,12 @@ client.on('interactionCreate', async interaction => {
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({
           content: 'Something went wrong. Please try again.',
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       } else {
         await interaction.reply({
           content: 'Something went wrong. Please try again.',
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
     } catch (replyError) {
