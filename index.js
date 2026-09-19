@@ -1320,6 +1320,15 @@ client.on(
    LOGIN
 ========================================================= */
 
+client.on(
+  'shardError',
+  error =>
+    console.error(
+      '❌ Discord Shard Error:',
+      error
+    )
+);
+
 client
   .login(TOKEN)
   .catch(error =>
