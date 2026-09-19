@@ -1,10 +1,26 @@
 require('dotenv').config();
 
+const http = require('http');
+
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
+  SlashCommandBuilder,
+  REST,
+  Routes,
+  MessageFlags,
+} = require('discord.js');
+
 // ==========================================
 // RENDER HEALTH CHECK
 // ==========================================
-
-const http = require('http');
 
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -28,28 +44,18 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 Health server running on port ${PORT}`);
 });
 
-const {
-  Client,
-  GatewayIntentBits,
-  Partials,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
-  SlashCommandBuilder,
-  REST,
-  Routes,
-  MessageFlags,
-} = require('discord.js');
+// ==========================================
+// ENVIRONMENT VARIABLES
+// ==========================================
 
 const {
   DISCORD_TOKEN,
   CLIENT_ID,
   GUILD_ID,
+
   ROLE_LANE_CHANNEL_ID,
   LOG_CHANNEL_ID,
+
   LAMPOON_GIF_URL,
 
   ROLE_FIGHTER,
@@ -67,7 +73,15 @@ const {
   ROLE_VERSATILE,
 } = process.env;
 
+// ==========================================
+// CONSTANTS
+// ==========================================
+
 const AVISALA = '<a:Avisala:1542448826265243660>';
+
+// ==========================================
+// ROLE DATA
+// ==========================================
 
 const ROLES = [
   {
@@ -114,6 +128,10 @@ const ROLES = [
   },
 ];
 
+// ==========================================
+// LANE DATA
+// ==========================================
+
 const LANES = [
   {
     key: 'clashlane',
@@ -159,6 +177,10 @@ const LANES = [
   },
 ];
 
+// ==========================================
+// DISCORD CLIENT
+// ==========================================
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -166,6 +188,10 @@ const client = new Client({
   ],
   partials: [Partials.GuildMember],
 });
+
+// ==========================================
+// HELPERS
+// ==========================================
 
 function getRoleId(item) {
   return item.env;
@@ -193,29 +219,169 @@ function selectedText(member, items) {
     .join('\n');
 }
 
+// ==========================================
+// MAIN EMBED
+// ==========================================
+
 function mainEmbed() {
   return new EmbedBuilder()
     .setColor(0x3299DB)
     .setTitle('🎮 LAMPOON ROLE & LANE SELECTION')
     .setDescription(
-      [
-        `${AVISALA} **ROLE & LANE GUIDE**`,
-        '',
-        '**Your selection automatically updates your LAMPOON Discord roles.**',
-        '',
-        '⚔️ **Role**',
-        'Choose one or more Hero Roles you are comfortable playing in-game.',
-        '',
-        '🛣️ **Lane**',
-        'Choose one or more Lane Roles to gain their corresponding server colors.',
-        '',
-        'You can change your Role or Lane selections anytime.',
-      ].join('\n')
+      `${AVISALA} **ROLE & LANE GUIDE**
+
+**Your selection automatically updates your LAMPOON Discord roles.**
+
+⚔️ **Role**
+Choose one or more Hero Roles you are comfortable playing in-game.
+
+🛣️ **Lane**
+Choose one or more Lane Roles to gain their corresponding server colors.
+
+You can change your Role or Lane selections anytime.`
     )
     .setThumbnail(LAMPOON_GIF_URL)
     .setFooter({
       text: 'LAMPOON • Role & Lane Selection',
     });
+}
+
+// ==========================================
+// ROLE EMBED
+// ==========================================
+
+function roleEmbed() {
+  return new EmbedBuilder()
+    .setColor(0xC0C0C0)
+    .setTitle('⚔️ ROLE SELECTION')
+    .setDescription(
+      `${AVISALA} **Choose your Hero Roles**
+
+Select one or more roles that represent the heroes you are comfortable playing.
+
+Your selection is private and only affects your own Discord roles.`
+    )
+    .setThumbnail(LAMPOON_GIF_URL)
+    .setFooter({
+      text: 'LAMPOON • Role Selection',
+    });
+}
+
+// ==========================================
+// LANE EMBED
+// ==========================================
+
+function laneEmbed() {
+  return new EmbedBuilder()
+    .setColor(0xFFD700)
+    .setTitle('🛣️ LANE SELECTION')
+    .setDescription(
+      `${AVISALA} **Choose your Lanes**
+
+Select one or more lanes you are comfortable playing.
+
+Your selection is private and automatically gives you the corresponding LAMPOON lane roles and server colors.`
+    )
+    .setThumbnail(LAMPOON_GIF_URL)
+    .setFooter({
+      text: 'LAMPOON • Lane Selection',
+    });
+}
+
+// ==========================================
+// ROLE MENU
+// ==========================================
+
+function roleMenu(member) {
+  const selected = getSelectedItems(member, ROLES);
+
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('lampoon_role_select')
+    .setPlaceholder('Select your Hero Roles')
+    .setMinValues(1)
+    .setMaxValues(ROLES.length)
+    .addOptions(
+      ROLES.map(role =>
+        new StringSelectMenuOptionBuilder()
+          .setLabel(role.name)
+          .setDescription(role.description)
+          .setValue(role.key)
+          .setEmoji(role.emoji)
+          .setDefault(
+            selected.some(x => x.key === role.key)
+          )
+      )
+    );
+
+  return new ActionRowBuilder().addComponents(menu);
+}
+
+// ==========================================
+// LANE MENU
+// ==========================================
+
+function laneMenu(member) {
+  const selected = getSelectedItems(member, LANES);
+
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('lampoon_lane_select')
+    .setPlaceholder('Select your Lanes')
+    .setMinValues(1)
+    .setMaxValues(LANES.length)
+    .addOptions(
+      LANES.map(lane =>
+        new StringSelectMenuOptionBuilder()
+          .setLabel(lane.name)
+          .setDescription(lane.description)
+          .setValue(lane.key)
+          .setEmoji(lane.emoji)
+          .setDefault(
+            selected.some(x => x.key === lane.key)
+          )
+      )
+    );
+
+  return new ActionRowBuilder().addComponents(menu);
+}
+
+// ==========================================
+// PANEL BUTTONS
+// ==========================================
+
+function rolePanelButtons() {
+  return [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('lampoon_role_done')
+        .setLabel('Done')
+        .setEmoji('✅')
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId('lampoon_switch_lane')
+        .setLabel('Switch to Lane')
+        .setEmoji('🛣️')
+        .setStyle(ButtonStyle.Secondary)
+    ),
+  ];
+}
+
+function lanePanelButtons() {
+  return [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('lampoon_lane_done')
+        .setLabel('Done')
+        .setEmoji('✅')
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId('lampoon_switch_role')
+        .setLabel('Switch to Role')
+        .setEmoji('⚔️')
+        .setStyle(ButtonStyle.Secondary)
+    ),
+  ];
 }
 
 function mainButtons() {
@@ -237,141 +403,39 @@ function mainButtons() {
         .setCustomId('lampoon_current')
         .setLabel('My Selection')
         .setEmoji('🔎')
-        .setStyle(ButtonStyle.Primary),
+        .setStyle(ButtonStyle.Primary)
     ),
   ];
 }
 
-function roleEmbed() {
-  const description = [
-    `${AVISALA} **ROLE GUIDE**`,
-    'Choose the role that best matches your preferred playstyle.',
-    '',
-    'You can select multiple roles and change your selections anytime.',
-    '',
-    'Your selected roles automatically update your LAMPOON Discord roles.',
-    '',
-    '⚔️ **Fighter**',
-    `${AVISALA} ᴅᴜʀᴀʙʟᴇ ᴍᴇʟᴇᴇ ʜᴇʀᴏᴇs ᴀɴᴅ ᴅᴜᴇʟɪsᴛs.`,
-    '',
-    '🛡️ **Tank**',
-    `${AVISALA} ꜰʀᴏɴᴛʟɪɴᴇ ʜᴇʀᴏᴇs ᴡʜᴏ ᴘʀᴏᴛᴇᴄᴛ ᴛʜᴇ ᴛᴇᴀᴍ.`,
-    '',
-    '🗡️ **Assassin**',
-    `${AVISALA} ʜɪɢʜ-ʙᴜʀsᴛ ʜᴇʀᴏᴇs ᴡʜᴏ ᴇʟɪᴍɪɴᴀᴛᴇ ᴘʀɪᴏʀɪᴛʏ ᴛᴀʀɢᴇᴛs.`,
-    '',
-    '🔮 **Mage**',
-    `${AVISALA} ᴍᴀɢɪᴄ ᴅᴀᴍᴀɢᴇ ᴀɴᴅ ᴄʀᴏᴡᴅ-ᴄᴏɴᴛʀᴏʟ sᴘᴇᴄɪᴀʟɪsᴛs.`,
-    '',
-    '🏹 **Marksman**',
-    `${AVISALA} ʀᴀɴɢᴇᴅ ʜᴇʀᴏᴇs ᴘʀᴏᴠɪᴅɪɴɢ ᴄᴏɴsɪsᴛᴇɴᴛ ᴅᴀᴍᴀɢᴇ.`,
-    '',
-    '🛟 **Support**',
-    `${AVISALA} ʜᴇʀᴏᴇs ᴡʜᴏ ᴘʀᴏᴛᴇᴄᴛ, ᴇᴍᴘᴏᴡᴇʀ, ʜᴇᴀʟ, ᴏʀ ᴄᴏɴᴛʀᴏʟ.`,
-  ];
-
-  return new EmbedBuilder()
-    .setColor(0xC0C0C0)
-    .setTitle('⚔️ ROLE SELECTION')
-    .setDescription(description.join('\n'));
-}
-
-function laneEmbed() {
-  const description = [
-    `${AVISALA} **LANE GUIDE**`,
-    'Choose the lane that best matches your preferred position.',
-    '',
-    'You can select multiple lanes and change your selections anytime.',
-    '',
-    'Your selected lanes automatically update your LAMPOON Discord roles.',
-    '',
-    '<:clashlane:1550553783304589443> **Clashlane**',
-    `${AVISALA} sᴏʟᴏ ʟᴀɴᴇ ꜰᴏʀ ᴅᴜᴇʟɪɴɢ ᴀɴᴅ sᴘʟɪᴛ ᴘᴜsʜɪɴɢ.`,
-    '',
-    '<:jungler:1550553875562500248> **Jungler**',
-    `${AVISALA} ᴊᴜɴɢʟᴇ ʀᴇsᴏᴜʀᴄᴇs, ᴏʙᴊᴇᴄᴛɪᴠᴇs, ᴀɴᴅ ᴍᴀᴘ ᴘʀᴇssᴜʀᴇ.`,
-    '',
-    '<:midlane:1550553955501871124> **Midlane**',
-    `${AVISALA} ᴡᴀᴠᴇ ᴄʟᴇᴀʀɪɴɢ, ʀᴏᴛᴀᴛɪᴏɴs, ᴀɴᴅ ᴛᴇᴀᴍ ꜰɪɢʜᴛs.`,
-    '',
-    '<:farmlane:1550554057448361984> **Farmlane**',
-    `${AVISALA} ɢᴏʟᴅ ꜰᴀʀᴍɪɴɢ ᴀɴᴅ ᴘʀɪᴍᴀʀʏ ᴅᴀᴍᴀɢᴇ.`,
-    '',
-    '<:roamer:1550554124473466920> **Roamer**',
-    `${AVISALA} ᴍᴀᴘ sᴜᴘᴘᴏʀᴛ, ɪɴɪᴛɪᴀᴛɪᴏɴ, ᴀɴᴅ ᴛᴇᴀᴍ ᴀssɪsᴛᴀɴᴄᴇ.`,
-    '',
-    '<:versatile:1550554190496014366> **Versatile**',
-    `${AVISALA} ᴄᴏᴍꜰᴏʀᴛᴀʙʟᴇ ᴀᴅᴀᴘᴛɪɴɢ ᴛᴏ ᴍᴜʟᴛɪᴘʟᴇ ʟᴀɴᴇs.`,
-  ];
-
-  return new EmbedBuilder()
-    .setColor(0xFFD700)
-    .setTitle('🛣️ LANE SELECTION')
-    .setDescription(description.join('\n'));
-}
-
-function roleMenu(member) {
-  const selected = getSelectedItems(member, ROLES);
-
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId('lampoon_role_select')
-    .setPlaceholder('Select your Hero Roles')
-    .setMinValues(1)
-    .setMaxValues(ROLES.length)
-    .addOptions(
-      ROLES.map(role =>
-        new StringSelectMenuOptionBuilder()
-          .setLabel(role.name)
-          .setDescription(role.description)
-          .setValue(role.key)
-          .setEmoji(role.emoji)
-          .setDefault(selected.some(x => x.key === role.key))
-      )
-    );
-
-  return new ActionRowBuilder().addComponents(menu);
-}
-
-function laneMenu(member) {
-  const selected = getSelectedItems(member, LANES);
-
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId('lampoon_lane_select')
-    .setPlaceholder('Select your Lanes')
-    .setMinValues(1)
-    .setMaxValues(LANES.length)
-    .addOptions(
-      LANES.map(lane =>
-        new StringSelectMenuOptionBuilder()
-          .setLabel(lane.name)
-          .setDescription(lane.description)
-          .setValue(lane.key)
-          .setDefault(selected.some(x => x.key === lane.key))
-      )
-    );
-
-  return new ActionRowBuilder().addComponents(menu);
-}
+// ==========================================
+// CURRENT SELECTION EMBED
+// ==========================================
 
 function currentSelectionEmbed(member) {
   return new EmbedBuilder()
     .setColor(0x3299DB)
     .setTitle('✦ CURRENTLY SELECTED ✦')
     .setDescription(
-      [
-        'Your current Role and Lane selections are **private**.',
-        '',
-        '⚔️ **Role**',
-        selectedText(member, ROLES),
-        '',
-        '🛣️ **Lane**',
-        selectedText(member, LANES),
-      ].join('\n')
+      `${AVISALA} **Your current selections are private.**
+
+⚔️ **Hero Roles**
+${selectedText(member, ROLES)}
+
+🛣️ **Lanes**
+${selectedText(member, LANES)}
+
+Only you can view this selection.`
     )
+    .setThumbnail(LAMPOON_GIF_URL)
     .setFooter({
-      text: 'LAMPOON • Role & Lane Selection',
+      text: 'LAMPOON • Private Selection',
     });
 }
+
+// ==========================================
+// CURRENT SELECTION BUTTONS
+// ==========================================
 
 function currentSelectionButtons() {
   return [
@@ -386,7 +450,7 @@ function currentSelectionButtons() {
         .setCustomId('lampoon_switch_lane')
         .setLabel('Switch Lane')
         .setEmoji('🛣️')
-        .setStyle(ButtonStyle.Secondary),
+        .setStyle(ButtonStyle.Secondary)
     ),
 
     new ActionRowBuilder().addComponents(
@@ -400,112 +464,122 @@ function currentSelectionButtons() {
         .setCustomId('lampoon_clear_lanes')
         .setLabel('Clear Lanes')
         .setEmoji('🗑️')
-        .setStyle(ButtonStyle.Danger),
+        .setStyle(ButtonStyle.Danger)
     ),
 
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('lampoon_close')
         .setLabel('Close')
-        .setStyle(ButtonStyle.Secondary),
+        .setEmoji('✖️')
+        .setStyle(ButtonStyle.Secondary)
     ),
   ];
 }
 
-function rolePanelButtons() {
-  return [
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('lampoon_role_done')
-        .setLabel('Done')
-        .setEmoji('✅')
-        .setStyle(ButtonStyle.Success),
+// ==========================================
+// LOG EMBEDS
+// ==========================================
 
-      new ButtonBuilder()
-        .setCustomId('lampoon_switch_lane')
-        .setLabel('Switch Lane')
-        .setEmoji('🛣️')
-        .setStyle(ButtonStyle.Secondary),
-    ),
-  ];
-}
-
-function lanePanelButtons() {
-  return [
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('lampoon_lane_done')
-        .setLabel('Done')
-        .setEmoji('✅')
-        .setStyle(ButtonStyle.Success),
-
-      new ButtonBuilder()
-        .setCustomId('lampoon_switch_role')
-        .setLabel('Switch Role')
-        .setEmoji('⚔️')
-        .setStyle(ButtonStyle.Secondary),
-    ),
-  ];
-}
-
-function roleLogEmbed(member, action, roleName) {
-  return new EmbedBuilder()
+function roleLogEmbed(member, added, removed) {
+  const embed = new EmbedBuilder()
     .setColor(0xC0C0C0)
     .setTitle('⚔️ ROLE SELECTION LOG')
-    .setDescription(
-      [
-        `**Member:** ${member}`,
-        `**Action:** ${action}`,
-        `**Role:** ${roleName}`,
-      ].join('\n')
-    )
-    .setTimestamp();
+    .setThumbnail(member.user.displayAvatarURL())
+    .addFields({
+      name: '👤 Member',
+      value: `${member}`,
+      inline: false,
+    });
+
+  if (added.length) {
+    embed.addFields({
+      name: '➕ Added',
+      value: added
+        .map(item => `${item.emoji} **${item.name}**`)
+        .join('\n'),
+      inline: false,
+    });
+  }
+
+  if (removed.length) {
+    embed.addFields({
+      name: '➖ Removed',
+      value: removed
+        .map(item => `${item.emoji} **${item.name}**`)
+        .join('\n'),
+      inline: false,
+    });
+  }
+
+  if (!added.length && !removed.length) {
+    embed.addFields({
+      name: 'ℹ️ Changes',
+      value: '`No changes`',
+      inline: false,
+    });
+  }
+
+  embed.setTimestamp();
+
+  return embed;
 }
 
-function laneLogEmbed(member, action, laneName) {
-  return new EmbedBuilder()
+function laneLogEmbed(member, added, removed) {
+  const embed = new EmbedBuilder()
     .setColor(0xFFD700)
     .setTitle('🛣️ LANE SELECTION LOG')
-    .setDescription(
-      [
-        `**Member:** ${member}`,
-        `**Action:** ${action}`,
-        `**Lane:** ${laneName}`,
-      ].join('\n')
-    )
-    .setTimestamp();
-}
-
-async function sendRoleLog(member, action, roleName) {
-  try {
-    const channel = member.guild.channels.cache.get(LOG_CHANNEL_ID);
-
-    if (!channel) return;
-
-    await channel.send({
-      embeds: [roleLogEmbed(member, action, roleName)],
+    .setThumbnail(member.user.displayAvatarURL())
+    .addFields({
+      name: '👤 Member',
+      value: `${member}`,
+      inline: false,
     });
-  } catch (error) {
-    console.error('Role log error:', error);
-  }
-}
 
-async function sendLaneLog(member, action, laneName) {
-  try {
-    const channel = member.guild.channels.cache.get(LOG_CHANNEL_ID);
-
-    if (!channel) return;
-
-    await channel.send({
-      embeds: [laneLogEmbed(member, action, laneName)],
+  if (added.length) {
+    embed.addFields({
+      name: '➕ Added',
+      value: added
+        .map(item => `${item.emoji} **${item.name}**`)
+        .join('\n'),
+      inline: false,
     });
-  } catch (error) {
-    console.error('Lane log error:', error);
   }
+
+  if (removed.length) {
+    embed.addFields({
+      name: '➖ Removed',
+      value: removed
+        .map(item => `${item.emoji} **${item.name}**`)
+        .join('\n'),
+      inline: false,
+    });
+  }
+
+  if (!added.length && !removed.length) {
+    embed.addFields({
+      name: 'ℹ️ Changes',
+      value: '`No changes`',
+      inline: false,
+    });
+  }
+
+  embed.setTimestamp();
+
+  return embed;
 }
+
+// ==========================================
+// UPDATE ROLE SELECTION
+// ==========================================
 
 async function updateRoleSelection(member, values) {
   const selectedKeys = new Set(values);
+
+  const current = getSelectedItems(member, ROLES);
+
+  const added = [];
+  const removed = [];
 
   for (const role of ROLES) {
     const roleId = getRoleId(role);
@@ -517,18 +591,47 @@ async function updateRoleSelection(member, values) {
 
     if (shouldHaveRole && !hasRole) {
       await member.roles.add(roleId);
-      await sendRoleLog(member, 'Added', role.name);
+      added.push(role);
     }
 
     if (!shouldHaveRole && hasRole) {
       await member.roles.remove(roleId);
-      await sendRoleLog(member, 'Removed', role.name);
+      removed.push(role);
     }
   }
+
+  if (added.length || removed.length) {
+    const logChannel = await client.channels
+      .fetch(LOG_CHANNEL_ID)
+      .catch(() => null);
+
+    if (logChannel && logChannel.isTextBased()) {
+      await logChannel.send({
+        embeds: [
+          roleLogEmbed(member, added, removed),
+        ],
+      });
+    }
+  }
+
+  return {
+    current,
+    added,
+    removed,
+  };
 }
+
+// ==========================================
+// UPDATE LANE SELECTION
+// ==========================================
 
 async function updateLaneSelection(member, values) {
   const selectedKeys = new Set(values);
+
+  const current = getSelectedItems(member, LANES);
+
+  const added = [];
+  const removed = [];
 
   for (const lane of LANES) {
     const roleId = getRoleId(lane);
@@ -540,127 +643,210 @@ async function updateLaneSelection(member, values) {
 
     if (shouldHaveRole && !hasRole) {
       await member.roles.add(roleId);
-      await sendLaneLog(member, 'Added', lane.name);
+      added.push(lane);
     }
 
     if (!shouldHaveRole && hasRole) {
       await member.roles.remove(roleId);
-      await sendLaneLog(member, 'Removed', lane.name);
+      removed.push(lane);
     }
   }
+
+  if (added.length || removed.length) {
+    const logChannel = await client.channels
+      .fetch(LOG_CHANNEL_ID)
+      .catch(() => null);
+
+    if (logChannel && logChannel.isTextBased()) {
+      await logChannel.send({
+        embeds: [
+          laneLogEmbed(member, added, removed),
+        ],
+      });
+    }
+  }
+
+  return {
+    current,
+    added,
+    removed,
+  };
 }
 
-async function clearAllRoles(member) {
-  for (const role of ROLES) {
+// ==========================================
+// CLEAR ROLE SELECTION
+// ==========================================
+
+async function clearRoles(member) {
+  const selected = getSelectedItems(member, ROLES);
+
+  for (const role of selected) {
     const roleId = getRoleId(role);
 
     if (!roleId) continue;
 
-    if (member.roles.cache.has(roleId)) {
-      await member.roles.remove(roleId);
-      await sendRoleLog(member, 'Removed', role.name);
+    await member.roles.remove(roleId);
+  }
+
+  if (selected.length) {
+    const logChannel = await client.channels
+      .fetch(LOG_CHANNEL_ID)
+      .catch(() => null);
+
+    if (logChannel && logChannel.isTextBased()) {
+      await logChannel.send({
+        embeds: [
+          roleLogEmbed(member, [], selected),
+        ],
+      });
     }
   }
+
+  return selected;
 }
 
-async function clearAllLanes(member) {
-  for (const lane of LANES) {
+// ==========================================
+// CLEAR LANE SELECTION
+// ==========================================
+
+async function clearLanes(member) {
+  const selected = getSelectedItems(member, LANES);
+
+  for (const lane of selected) {
     const roleId = getRoleId(lane);
 
     if (!roleId) continue;
 
-    if (member.roles.cache.has(roleId)) {
-      await member.roles.remove(roleId);
-      await sendLaneLog(member, 'Removed', lane.name);
+    await member.roles.remove(roleId);
+  }
+
+  if (selected.length) {
+    const logChannel = await client.channels
+      .fetch(LOG_CHANNEL_ID)
+      .catch(() => null);
+
+    if (logChannel && logChannel.isTextBased()) {
+      await logChannel.send({
+        embeds: [
+          laneLogEmbed(member, [], selected),
+        ],
+      });
     }
   }
+
+  return selected;
 }
+
+// ==========================================
+// FIND / CREATE MAIN PANEL
+// ==========================================
 
 async function sendOrFindPanel() {
-  const guild = client.guilds.cache.get(GUILD_ID);
+  const channel = await client.channels
+    .fetch(ROLE_LANE_CHANNEL_ID)
+    .catch(() => null);
 
-  if (!guild) {
-    console.error('Guild not found.');
+  if (!channel || !channel.isTextBased()) {
+    console.error('❌ Role & Lane channel not found.');
     return;
   }
 
-  const channel = guild.channels.cache.get(ROLE_LANE_CHANNEL_ID);
+  const messages = await channel.messages
+    .fetch({ limit: 100 })
+    .catch(() => null);
 
-  if (!channel) {
-    console.error('Role/Lane channel not found.');
+  if (!messages) {
+    console.error('❌ Could not fetch channel messages.');
     return;
   }
 
-  const messages = await channel.messages.fetch({
-    limit: 50,
+  const existing = messages.find(message => {
+    if (message.author.id !== client.user.id) {
+      return false;
+    }
+
+    if (!message.embeds.length) {
+      return false;
+    }
+
+    return (
+      message.embeds[0].title ===
+      '🎮 LAMPOON ROLE & LANE SELECTION'
+    );
   });
 
-  const existing = messages.find(
-    message =>
-      message.author.id === client.user.id &&
-      message.embeds.length &&
-      message.embeds[0].title === '🎮 LAMPOON ROLE & LANE SELECTION'
-  );
-
-  if (existing) {
-    await existing.edit({
-      embeds: [mainEmbed()],
-      components: mainButtons(),
-    });
-
-    console.log('Existing LAMPOON panel updated.');
-    return;
-  }
-
-  await channel.send({
+  const payload = {
     embeds: [mainEmbed()],
     components: mainButtons(),
-  });
+  };
 
-  console.log('LAMPOON panel created.');
+  if (existing) {
+    await existing.edit(payload);
+
+    console.log('Existing LAMPOON panel updated.');
+
+    return;
+  }
+
+  await channel.send(payload);
+
+  console.log('New LAMPOON panel created.');
 }
+
+// ==========================================
+// SLASH COMMANDS
+// ==========================================
 
 const commands = [
   new SlashCommandBuilder()
     .setName('my-selection')
-    .setDescription(
-      'View your current Role and Lane selections privately.'
-    ),
+    .setDescription('View your current Role and Lane selections.'),
 
   new SlashCommandBuilder()
     .setName('reset-selection')
-    .setDescription(
-      'Reset all of your Role and Lane selections.'
-    ),
+    .setDescription('Clear all of your Role and Lane selections.'),
 ].map(command => command.toJSON());
 
-async function registerCommands() {
-  try {
-    const rest = new REST({
-      version: '10',
-    }).setToken(DISCORD_TOKEN);
+// ==========================================
+// REGISTER SLASH COMMANDS
+// ==========================================
 
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      {
-        body: commands,
-      }
-    );
+async function registerSlashCommands() {
+  const rest = new REST({
+    version: '10',
+  }).setToken(DISCORD_TOKEN);
 
-    console.log('Slash commands registered.');
-  } catch (error) {
-    console.error('Command registration error:', error);
-  }
+  await rest.put(
+    Routes.applicationGuildCommands(
+      CLIENT_ID,
+      GUILD_ID
+    ),
+    {
+      body: commands,
+    }
+  );
+
+  console.log('Slash commands registered.');
 }
+
+// ==========================================
+// INTERACTIONS
+// ==========================================
 
 client.on('interactionCreate', async interaction => {
   try {
-    if (interaction.isChatInputCommand()) {
-      if (interaction.commandName === 'my-selection') {
-        const member = interaction.member;
+    // ========================================
+    // SLASH COMMANDS
+    // ========================================
 
+    if (interaction.isChatInputCommand()) {
+      const member = interaction.member;
+
+      if (interaction.commandName === 'my-selection') {
         await interaction.reply({
-          embeds: [currentSelectionEmbed(member)],
+          embeds: [
+            currentSelectionEmbed(member),
+          ],
           components: currentSelectionButtons(),
           flags: MessageFlags.Ephemeral,
         });
@@ -669,13 +855,13 @@ client.on('interactionCreate', async interaction => {
       }
 
       if (interaction.commandName === 'reset-selection') {
-        const member = interaction.member;
-
-        await clearAllRoles(member);
-        await clearAllLanes(member);
+        await clearRoles(member);
+        await clearLanes(member);
 
         await interaction.reply({
-          embeds: [currentSelectionEmbed(member)],
+          embeds: [
+            currentSelectionEmbed(member),
+          ],
           components: currentSelectionButtons(),
           flags: MessageFlags.Ephemeral,
         });
@@ -684,8 +870,16 @@ client.on('interactionCreate', async interaction => {
       }
     }
 
+    // ========================================
+    // BUTTONS
+    // ========================================
+
     if (interaction.isButton()) {
       const member = interaction.member;
+
+      // --------------------------------------
+      // OPEN ROLE MENU
+      // --------------------------------------
 
       if (interaction.customId === 'lampoon_role') {
         await interaction.reply({
@@ -700,6 +894,10 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
+      // --------------------------------------
+      // OPEN LANE MENU
+      // --------------------------------------
+
       if (interaction.customId === 'lampoon_lane') {
         await interaction.reply({
           embeds: [laneEmbed()],
@@ -713,15 +911,25 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
+      // --------------------------------------
+      // CURRENT SELECTION
+      // --------------------------------------
+
       if (interaction.customId === 'lampoon_current') {
         await interaction.reply({
-          embeds: [currentSelectionEmbed(member)],
+          embeds: [
+            currentSelectionEmbed(member),
+          ],
           components: currentSelectionButtons(),
           flags: MessageFlags.Ephemeral,
         });
 
         return;
       }
+
+      // --------------------------------------
+      // SWITCH TO ROLE
+      // --------------------------------------
 
       if (interaction.customId === 'lampoon_switch_role') {
         await interaction.update({
@@ -735,6 +943,10 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
+      // --------------------------------------
+      // SWITCH TO LANE
+      // --------------------------------------
+
       if (interaction.customId === 'lampoon_switch_lane') {
         await interaction.update({
           embeds: [laneEmbed()],
@@ -747,49 +959,81 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
+      // --------------------------------------
+      // ROLE DONE
+      // --------------------------------------
+
       if (interaction.customId === 'lampoon_role_done') {
         await interaction.update({
-          embeds: [currentSelectionEmbed(member)],
+          embeds: [
+            currentSelectionEmbed(member),
+          ],
           components: currentSelectionButtons(),
         });
 
         return;
       }
+
+      // --------------------------------------
+      // LANE DONE
+      // --------------------------------------
 
       if (interaction.customId === 'lampoon_lane_done') {
         await interaction.update({
-          embeds: [currentSelectionEmbed(member)],
+          embeds: [
+            currentSelectionEmbed(member),
+          ],
           components: currentSelectionButtons(),
         });
 
         return;
       }
+
+      // --------------------------------------
+      // CLEAR ROLES
+      // --------------------------------------
 
       if (interaction.customId === 'lampoon_clear_roles') {
-        await clearAllRoles(member);
+        await interaction.deferUpdate();
 
-        await interaction.update({
-          embeds: [currentSelectionEmbed(member)],
+        await clearRoles(member);
+
+        await interaction.editReply({
+          embeds: [
+            currentSelectionEmbed(member),
+          ],
           components: currentSelectionButtons(),
         });
 
         return;
       }
+
+      // --------------------------------------
+      // CLEAR LANES
+      // --------------------------------------
 
       if (interaction.customId === 'lampoon_clear_lanes') {
-        await clearAllLanes(member);
+        await interaction.deferUpdate();
 
-        await interaction.update({
-          embeds: [currentSelectionEmbed(member)],
+        await clearLanes(member);
+
+        await interaction.editReply({
+          embeds: [
+            currentSelectionEmbed(member),
+          ],
           components: currentSelectionButtons(),
         });
 
         return;
       }
+
+      // --------------------------------------
+      // CLOSE
+      // --------------------------------------
 
       if (interaction.customId === 'lampoon_close') {
         await interaction.update({
-          content: 'Selection panel closed.',
+          content: '✦ **LAMPOON selection closed.**',
           embeds: [],
           components: [],
         });
@@ -798,13 +1042,28 @@ client.on('interactionCreate', async interaction => {
       }
     }
 
+    // ========================================
+    // SELECT MENUS
+    // ========================================
+
     if (interaction.isStringSelectMenu()) {
       const member = interaction.member;
 
-      if (interaction.customId === 'lampoon_role_select') {
-        await updateRoleSelection(member, interaction.values);
+      // --------------------------------------
+      // ROLE SELECT
+      // IMPORTANT:
+      // ACKNOWLEDGE IMMEDIATELY
+      // --------------------------------------
 
-        await interaction.update({
+      if (interaction.customId === 'lampoon_role_select') {
+        await interaction.deferUpdate();
+
+        await updateRoleSelection(
+          member,
+          interaction.values
+        );
+
+        await interaction.editReply({
           embeds: [roleEmbed()],
           components: [
             roleMenu(member),
@@ -815,10 +1074,21 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
-      if (interaction.customId === 'lampoon_lane_select') {
-        await updateLaneSelection(member, interaction.values);
+      // --------------------------------------
+      // LANE SELECT
+      // IMPORTANT:
+      // ACKNOWLEDGE IMMEDIATELY
+      // --------------------------------------
 
-        await interaction.update({
+      if (interaction.customId === 'lampoon_lane_select') {
+        await interaction.deferUpdate();
+
+        await updateLaneSelection(
+          member,
+          interaction.values
+        );
+
+        await interaction.editReply({
           embeds: [laneEmbed()],
           components: [
             laneMenu(member),
@@ -830,35 +1100,52 @@ client.on('interactionCreate', async interaction => {
       }
     }
   } catch (error) {
-    console.error('Interaction error:', error);
+    console.error('❌ Interaction error:', error);
 
     try {
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({
-          content: 'Something went wrong. Please try again.',
-          flags: MessageFlags.Ephemeral,
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({
+          content:
+            '❌ Something went wrong while processing your selection. Please try again.',
+          embeds: [],
+          components: [],
         });
       } else {
         await interaction.reply({
-          content: 'Something went wrong. Please try again.',
+          content:
+            '❌ Something went wrong while processing your selection. Please try again.',
           flags: MessageFlags.Ephemeral,
         });
       }
     } catch (replyError) {
-      console.error('Error response failed:', replyError);
+      console.error(
+        '❌ Could not send error response:',
+        replyError
+      );
     }
   }
 });
 
+// ==========================================
+// BOT READY
+// ==========================================
+
 client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
-  await registerCommands();
-  await sendOrFindPanel();
+  try {
+    await registerSlashCommands();
+    await sendOrFindPanel();
+  } catch (error) {
+    console.error(
+      '❌ Startup task error:',
+      error
+    );
+  }
 });
 
-client.on('error', error => {
-  console.error('Discord client error:', error);
-});
+// ==========================================
+// LOGIN
+// ==========================================
 
 client.login(DISCORD_TOKEN);
