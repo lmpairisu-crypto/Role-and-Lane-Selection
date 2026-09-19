@@ -285,7 +285,7 @@ function roleEmbed(member) {
     ROLES,
     '⚔️ CHOOSE YOUR ROLE',
     'Hero Roles',
-    0x95A5A6
+    0xC0C0C0
   );
 }
 
@@ -295,7 +295,7 @@ function laneEmbed(member) {
     LANES,
     '🛣️ CHOOSE YOUR LANE',
     'Lanes',
-    0xF1C40F
+    0xD4AF37
   );
 }
 
@@ -906,8 +906,8 @@ client.on('interactionCreate', async interaction => {
           new EmbedBuilder()
             .setColor(
               isRole
-                ? 0xF1C40F
-                : 0x95A5A6
+                ? 0xC0C0C0
+                : 0xD4AF37
             )
             .setTitle(
               isRole
