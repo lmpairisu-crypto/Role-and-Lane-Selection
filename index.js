@@ -228,7 +228,7 @@ function mainButtons() {
       .setCustomId('lampoon_open_roles')
       .setLabel('Choose Role')
       .setEmoji('⚔️')
-      .setStyle(ButtonStyle.Primary),
+      .setStyle(ButtonStyle.Secondary),
 
     new ButtonBuilder()
       .setCustomId('lampoon_open_lanes')
@@ -285,7 +285,7 @@ function roleEmbed(member) {
     ROLES,
     '⚔️ CHOOSE YOUR ROLE',
     'Hero Roles',
-    0xF1C40F
+    0x95A5A6
   );
 }
 
@@ -295,7 +295,7 @@ function laneEmbed(member) {
     LANES,
     '🛣️ CHOOSE YOUR LANE',
     'Lanes',
-    0x95A5A6
+    0xF1C40F
   );
 }
 
