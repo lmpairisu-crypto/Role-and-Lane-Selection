@@ -361,7 +361,7 @@ function createMainEmbed() {
 
       `You can change your Role or Lane selections anytime.`
     )
-    .setImage(LAMPOON_GIF_URL)
+    .setThumbnail(LAMPOON_GIF_URL)
     .setFooter({
       text: 'LAMPOON • Role & Lane Selection'
     });
