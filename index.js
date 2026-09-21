@@ -82,6 +82,12 @@ const {
 const AVISALA = '<a:Avisala:1542448826265243660>';
 const GIVEAWAY_ROLE_ID = '1546589750549418044';
 
+// Giveaway role expires after 24 hours
+const GIVEAWAY_ROLE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
+
+// Stores active expiration timers
+const giveawayExpirationTimers = new Map();
+
 // ==========================================
 // VALIDATION
 // ==========================================
@@ -831,6 +837,73 @@ async function sendOrFindPanel() {
 }
 
 // ==========================================
+// GIVEAWAY ROLE EXPIRATION
+// ==========================================
+
+function scheduleGiveawayRoleExpiration(memberId) {
+  const existingTimer = giveawayExpirationTimers.get(memberId);
+
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+
+  const timer = setTimeout(async () => {
+    try {
+      const guild = await client.guilds
+        .fetch(GUILD_ID)
+        .catch(() => null);
+
+      if (!guild) {
+        console.error(
+          `❌ Could not find guild while expiring Giveaway role for ${memberId}.`
+        );
+        return;
+      }
+
+      const member = await guild.members
+        .fetch(memberId)
+        .catch(() => null);
+
+      if (!member) {
+        console.log(
+          `ℹ️ Member ${memberId} is no longer in the server.`
+        );
+        return;
+      }
+
+      if (!member.roles.cache.has(GIVEAWAY_ROLE_ID)) {
+        console.log(
+          `ℹ️ @Giveaways already removed from ${member.user.tag}.`
+        );
+        return;
+      }
+
+      await member.roles.remove(
+        GIVEAWAY_ROLE_ID,
+        'Giveaway role expired after 24 hours without completion'
+      );
+
+      console.log(
+        `⏰ @Giveaways expired and was removed from ${member.user.tag} after 24 hours.`
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to expire @Giveaways role for ${memberId}:`,
+        error
+      );
+    } finally {
+      giveawayExpirationTimers.delete(memberId);
+    }
+  }, GIVEAWAY_ROLE_EXPIRATION_MS);
+
+  giveawayExpirationTimers.set(memberId, timer);
+
+  console.log(
+    `⏰ Giveaway role expiration scheduled for member ${memberId} in 24 hours.`
+  );
+}
+
+// ==========================================
 // GIVEAWAY EMBED
 // ==========================================
 
@@ -842,23 +915,27 @@ function createGiveawayEmbed() {
       [
         'Congratulations to all eligible giveaway winners! 🎉',
         '',
-        'If you are **claiming your giveaway reward**, click the **@Giveaways** button below to receive the Giveaway role.',
-        '',
         '### 🎁 CLAIM YOUR REWARD',
         '',
-        'Click **@Giveaways** to claim your temporary Giveaway role.',
+        'Click **@Giveaways** below to receive your temporary Giveaway role.',
         '',
-        'After claiming the role, proceed with the designated giveaway ticket to complete your reward claim with the staff team.',
+        'After claiming the role, proceed to the designated giveaway ticket to complete your reward claim with the staff team.',
         '',
         '### ⚠️ IMPORTANT REMINDERS',
         '',
-        `${AVISALA} ᴛʜᴇ @Giveaways ʀᴏʟᴇ ɪs ᴏɴʟʏ ғᴏʀ ᴍᴇᴍʙᴇʀs ᴡʜᴏ ᴀʀᴇ ᴄᴜʀʀᴇɴᴛʟʏ ᴄʟᴀɪᴍɪɴɢ ᴀ ɢɪᴠᴇᴀᴡᴀʏ ʀᴇᴡᴀʀᴅ.`,
-        `${AVISALA} ᴅᴏ ɴᴏᴛ ᴄʟᴀɪᴍ ᴛʜᴇ ʀᴏʟᴇ ɪғ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴄʟᴀɪᴍɪɴɢ ᴀ ʀᴇᴡᴀʀᴅ.`,
-        `${AVISALA} ᴋᴇᴇᴘ ʏᴏᴜʀ ʀᴇᴡᴀʀᴅ ᴄʟᴀɪᴍ ᴀɴᴅ ᴛɪᴄᴋᴇᴛ ᴘʀɪᴠᴀᴛᴇ.`,
-        `${AVISALA} ᴅᴏ ɴᴏᴛ sᴄʀᴇᴇɴsʜᴏᴛ ᴏʀ ᴇxᴘᴏsᴇ ᴛʜᴇ ᴘʀɪᴠᴀᴛᴇ ᴛɪᴄᴋᴇᴛ.`,
-        `${AVISALA} ᴅᴏ ɴᴏᴛ sʜᴀʀᴇ ᴛʜᴇ ᴛɪᴄᴋᴇᴛ ᴄᴏɴᴛᴇɴᴛs ᴏʀ ᴛʜᴇ sᴇɴᴅᴇʀ's ɪɴғᴏʀᴍᴀᴛɪᴏɴ.`,
-        `${AVISALA} ғᴏʟʟᴏᴡ ᴛʜᴇ ɪɴsᴛʀᴜᴄᴛɪᴏɴs ᴘʀᴏᴠɪᴅᴇᴅ ʙʏ ᴛʜᴇ sᴛᴀғғ ᴛᴇᴀᴍ.`,
-        `${AVISALA} ᴡʜᴇɴ ʏᴏᴜʀ ɢɪᴠᴇᴀᴡᴀʏ ᴛɪᴄᴋᴇᴛ ɪs ᴄʟᴏsᴇᴅ, ᴛɪᴄᴋᴇᴛʏ ʙᴏᴛ ᴡɪʟʟ ʀᴇᴍᴏᴠᴇ ᴛʜᴇ @Giveaways ʀᴏʟᴇ.`,
+        `${AVISALA} 𝖳𝗁𝖾 @Giveaways 𝗋𝗈𝗅𝖾 𝗂𝗌 𝗈𝗇𝗅𝗒 𝖿𝗈𝗋 𝗆𝖾𝗆𝖻𝖾𝗋𝗌 𝗐𝗁𝗈 𝖺𝗋𝖾 𝖼𝗎𝗋𝗋𝖾𝗇𝗍𝗅𝗒 𝖼𝗅𝖺𝗂𝗆𝗂𝗇𝗀 𝖺 𝗀𝗂𝗏𝖾𝖺𝗐𝖺𝗒 𝗋𝖾𝗐𝖺𝗋𝖽.`,
+        '',
+        `${AVISALA} 𝖣𝗈 𝗇𝗈𝗍 𝖼𝗅𝖺𝗂𝗆 𝗍𝗁𝖾 𝗋𝗈𝗅𝖾 𝗂𝖿 𝗒𝗈𝗎 𝖺𝗋𝖾 𝗇𝗈𝗍 𝖼𝗅𝖺𝗂𝗆𝗂𝗇𝗀 𝖺 𝗋𝖾𝗐𝖺𝗋𝖽.`,
+        '',
+        `${AVISALA} 𝖪𝖾𝖾𝗉 𝗒𝗈𝗎𝗋 𝗋𝖾𝗐𝖺𝗋𝖽 𝖼𝗅𝖺𝗂𝗆 𝖺𝗇𝖽 𝗍𝗂𝖼𝗄𝖾𝗍 𝗉𝗋𝗂𝗏𝖺𝗍𝖾.`,
+        '',
+        `${AVISALA} 𝖣𝗈 𝗇𝗈𝗍 𝗌𝖼𝗋𝖾𝖾𝗇𝗌𝗁𝗈𝗍 𝗈𝗋 𝖾𝗑𝗉𝗈𝗌𝖾 𝗍𝗁𝖾 𝗉𝗋𝗂𝗏𝖺𝗍𝖾 𝗍𝗂𝖼𝗄𝖾𝗍.`,
+        '',
+        `${AVISALA} 𝖣𝗈 𝗇𝗈𝗍 𝗌𝗁𝖺𝗋𝖾 𝗍𝗁𝖾 𝗍𝗂𝖼𝗄𝖾𝗍 𝖼𝗈𝗇𝗍𝖾𝗇𝗍𝗌 𝗈𝗋 𝗍𝗁𝖾 𝗌𝖾𝗇𝖽𝖾𝗋'𝗌 𝗂𝗇𝖿𝗈𝗋𝗆𝖺𝗍𝗂𝗈𝗇.`,
+        '',
+        `${AVISALA} 𝖥𝗈𝗅𝗅𝗈𝗐 𝗍𝗁𝖾 𝗂𝗇𝗌𝗍𝗋𝗎𝖼𝗍𝗂𝗈𝗇𝗌 𝗉𝗋𝗈𝗏𝗂𝖽𝖾𝖽 𝖻𝗒 𝗍𝗁𝖾 𝗌𝗍𝖺𝖿𝖿 𝗍𝖾𝖺𝗆.`,
+        '',
+        `${AVISALA} 𝖶𝗁𝖾𝗇 𝗒𝗈𝗎𝗋 𝗀𝗂𝗏𝖾𝖺𝗐𝖺𝗒𝗌 𝗍𝗂𝖼𝗄𝖾𝗍 𝗂𝗌 𝖼𝗅𝗈𝗌𝖾𝖽, 𝗍𝗂𝖼𝗄𝖾𝗍𝗒 𝖻𝗈𝗍 𝗐𝗂𝗅𝗅 𝗋𝖾𝗆𝗈𝗏𝖾 𝗍𝗁𝖾 @Giveaways 𝗋𝗈𝗅𝖾.`,
         '',
         '🎁 **Ready to claim your reward?**',
         '',
@@ -1074,9 +1151,13 @@ client.on('interactionCreate', async interaction => {
           'Giveaway reward claim'
         );
 
+        // Automatically remove the Giveaway role after 24 hours
+        // if Tickety has not already removed it.
+        scheduleGiveawayRoleExpiration(member.id);
+
         await interaction.reply({
           content:
-            '🎁 **Giveaway role claimed successfully!**\n\nYou now have the **@Giveaways** role and can proceed with your reward claim.',
+            '🎁 **Giveaway role claimed successfully!**\n\nYou now have the **@Giveaways** role and can proceed with your reward claim.\n\n⏰ If your claim is not completed, the role will automatically expire after **24 hours**.',
           flags: MessageFlags.Ephemeral,
         });
 
