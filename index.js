@@ -73,6 +73,8 @@ const {
   ROLE_VERSATILE,
 
   GIVEAWAY_CHANNEL_ID,
+  GIVEAWAY_LOG_CHANNEL_ID,
+  STAFF_ROLE_ID,
 } = process.env;
 
 // ==========================================
@@ -80,6 +82,7 @@ const {
 // ==========================================
 
 const AVISALA = '<a:Avisala:1542448826265243660>';
+
 const GIVEAWAY_ROLE_ID = '1546589750549418044';
 
 // Giveaway role expires after 24 hours
@@ -837,15 +840,88 @@ async function sendOrFindPanel() {
 }
 
 // ==========================================
+// GIVEAWAY LOG HELPER
+// ==========================================
+
+async function sendGiveawayLog(embed) {
+  if (!GIVEAWAY_LOG_CHANNEL_ID) {
+    console.log(
+      'ℹ️ GIVEAWAY_LOG_CHANNEL_ID is not configured. Giveaway log skipped.'
+    );
+    return;
+  }
+
+  const logChannel = await client.channels
+    .fetch(GIVEAWAY_LOG_CHANNEL_ID)
+    .catch(() => null);
+
+  if (!logChannel || !logChannel.isTextBased()) {
+    console.error('❌ Giveaway log channel not found.');
+    return;
+  }
+
+  await logChannel.send({
+    embeds: [embed],
+  }).catch(error => {
+    console.error(
+      '❌ Failed to send Giveaway log:',
+      error
+    );
+  });
+}
+
+// ==========================================
+// GIVEAWAY LOG EMBED
+// ==========================================
+
+function giveawayLogEmbed(member, action, reason = '—') {
+  return new EmbedBuilder()
+    .setColor(0xC0C0C0)
+    .setTitle('🎁 GIVEAWAY LOG')
+    .setThumbnail(member.user.displayAvatarURL())
+    .addFields(
+      {
+        name: '👤 Member',
+        value: `${member}\n\`${member.user.tag}\``,
+        inline: false,
+      },
+      {
+        name: '📌 Action',
+        value: action,
+        inline: false,
+      },
+      {
+        name: '📝 Reason',
+        value: reason || '—',
+        inline: false,
+      }
+    )
+    .setTimestamp()
+    .setFooter({
+      text: 'LAMPOON • Giveaway Logs',
+    });
+}
+
+// ==========================================
+// CLEAR GIVEAWAY EXPIRATION TIMER
+// ==========================================
+
+function clearGiveawayExpirationTimer(memberId) {
+  const timer = giveawayExpirationTimers.get(memberId);
+
+  if (timer) {
+    clearTimeout(timer);
+  }
+
+  giveawayExpirationTimers.delete(memberId);
+}
+
+// ==========================================
 // GIVEAWAY ROLE EXPIRATION
 // ==========================================
 
 function scheduleGiveawayRoleExpiration(memberId) {
-  const existingTimer = giveawayExpirationTimers.get(memberId);
-
-  if (existingTimer) {
-    clearTimeout(existingTimer);
-  }
+  clearGiveawayExpirationTimer(memberId);
 
   const timer = setTimeout(async () => {
     try {
@@ -881,6 +957,14 @@ function scheduleGiveawayRoleExpiration(memberId) {
       await member.roles.remove(
         GIVEAWAY_ROLE_ID,
         'Giveaway role expired after 24 hours without completion'
+      );
+
+      await sendGiveawayLog(
+        giveawayLogEmbed(
+          member,
+          '⏰ Giveaway Role Expired',
+          'The @Giveaways role automatically expired after 24 hours.'
+        )
       );
 
       console.log(
@@ -1024,6 +1108,30 @@ async function setupGiveawayPanel() {
 }
 
 // ==========================================
+// GIVEAWAY STAFF CHECK
+// ==========================================
+
+function isGiveawayStaff(interaction) {
+  if (
+    interaction.memberPermissions &&
+    interaction.memberPermissions.has('ManageGuild')
+  ) {
+    return true;
+  }
+
+  if (
+    STAFF_ROLE_ID &&
+    interaction.member &&
+    interaction.member.roles &&
+    interaction.member.roles.cache.has(STAFF_ROLE_ID)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+// ==========================================
 // SLASH COMMANDS
 // ==========================================
 
@@ -1035,6 +1143,50 @@ const commands = [
   new SlashCommandBuilder()
     .setName('reset-selection')
     .setDescription('Clear all of your Role and Lane selections.'),
+
+  new SlashCommandBuilder()
+    .setName('giveaway-punish')
+    .setDescription('Apply a staff action to a Giveaway role claimant.')
+    .addUserOption(option =>
+      option
+        .setName('member')
+        .setDescription('The member to take action on.')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option
+        .setName('action')
+        .setDescription('Choose the staff action.')
+        .setRequired(true)
+        .addChoices(
+          {
+            name: 'Warning',
+            value: 'warning',
+          },
+          {
+            name: 'Remove Giveaway Role',
+            value: 'remove_role',
+          },
+          {
+            name: 'Timeout',
+            value: 'timeout',
+          }
+        )
+    )
+    .addStringOption(option =>
+      option
+        .setName('reason')
+        .setDescription('Reason for the staff action.')
+        .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option
+        .setName('duration')
+        .setDescription('Timeout duration in minutes. Maximum 40320.')
+        .setRequired(false)
+        .setMinValue(1)
+        .setMaxValue(40320)
+    ),
 ].map(command => command.toJSON());
 
 // ==========================================
@@ -1072,6 +1224,10 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isChatInputCommand()) {
       const member = interaction.member;
 
+      // --------------------------------------
+      // MY SELECTION
+      // --------------------------------------
+
       if (interaction.commandName === 'my-selection') {
         await interaction.reply({
           embeds: [
@@ -1084,6 +1240,10 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
+      // --------------------------------------
+      // RESET SELECTION
+      // --------------------------------------
+
       if (interaction.commandName === 'reset-selection') {
         await clearRoles(member);
         await clearLanes(member);
@@ -1095,6 +1255,180 @@ client.on('interactionCreate', async interaction => {
           components: currentSelectionButtons(),
           flags: MessageFlags.Ephemeral,
         });
+
+        return;
+      }
+
+      // --------------------------------------
+      // GIVEAWAY PUNISH
+      // --------------------------------------
+
+      if (interaction.commandName === 'giveaway-punish') {
+        if (!isGiveawayStaff(interaction)) {
+          await interaction.reply({
+            content:
+              '❌ You do not have permission to use this command.',
+            flags: MessageFlags.Ephemeral,
+          });
+
+          return;
+        }
+
+        const targetUser =
+          interaction.options.getUser('member');
+
+        const action =
+          interaction.options.getString('action');
+
+        const reason =
+          interaction.options.getString('reason');
+
+        const duration =
+          interaction.options.getInteger('duration');
+
+        const guild = interaction.guild;
+
+        if (!guild) {
+          await interaction.reply({
+            content:
+              '❌ This command can only be used inside the server.',
+            flags: MessageFlags.Ephemeral,
+          });
+
+          return;
+        }
+
+        const targetMember = await guild.members
+          .fetch(targetUser.id)
+          .catch(() => null);
+
+        if (!targetMember) {
+          await interaction.reply({
+            content:
+              '❌ I could not find that member in the server.',
+            flags: MessageFlags.Ephemeral,
+          });
+
+          return;
+        }
+
+        // ------------------------------------
+        // WARNING
+        // ------------------------------------
+
+        if (action === 'warning') {
+          await sendGiveawayLog(
+            giveawayLogEmbed(
+              targetMember,
+              '⚠️ Staff Warning',
+              reason
+            )
+          );
+
+          await interaction.reply({
+            content:
+              `⚠️ Warning recorded for ${targetMember}.\n\n**Reason:** ${reason}`,
+            flags: MessageFlags.Ephemeral,
+          });
+
+          console.log(
+            `⚠️ ${targetMember.user.tag} received a Giveaway warning from ${interaction.user.tag}. Reason: ${reason}`
+          );
+
+          return;
+        }
+
+        // ------------------------------------
+        // REMOVE GIVEAWAY ROLE
+        // ------------------------------------
+
+        if (action === 'remove_role') {
+          if (
+            !targetMember.roles.cache.has(
+              GIVEAWAY_ROLE_ID
+            )
+          ) {
+            await interaction.reply({
+              content:
+                `ℹ️ ${targetMember} does not currently have the **@Giveaways** role.`,
+              flags: MessageFlags.Ephemeral,
+            });
+
+            return;
+          }
+
+          await targetMember.roles.remove(
+            GIVEAWAY_ROLE_ID,
+            `Giveaway staff action: ${reason}`
+          );
+
+          clearGiveawayExpirationTimer(
+            targetMember.id
+          );
+
+          await sendGiveawayLog(
+            giveawayLogEmbed(
+              targetMember,
+              '🗑️ Giveaway Role Removed',
+              reason
+            )
+          );
+
+          await interaction.reply({
+            content:
+              `🗑️ The **@Giveaways** role was removed from ${targetMember}.\n\n**Reason:** ${reason}`,
+            flags: MessageFlags.Ephemeral,
+          });
+
+          console.log(
+            `🗑️ @Giveaways removed from ${targetMember.user.tag} by ${interaction.user.tag}. Reason: ${reason}`
+          );
+
+          return;
+        }
+
+        // ------------------------------------
+        // TIMEOUT
+        // ------------------------------------
+
+        if (action === 'timeout') {
+          if (!duration) {
+            await interaction.reply({
+              content:
+                '❌ You must provide a **duration** when using the Timeout action.',
+              flags: MessageFlags.Ephemeral,
+            });
+
+            return;
+          }
+
+          const timeoutMs = duration * 60 * 1000;
+
+          await targetMember.timeout(
+            timeoutMs,
+            `Giveaway staff action: ${reason}`
+          );
+
+          await sendGiveawayLog(
+            giveawayLogEmbed(
+              targetMember,
+              `⏱️ Timeout — ${duration} minute(s)`,
+              reason
+            )
+          );
+
+          await interaction.reply({
+            content:
+              `⏱️ ${targetMember} has been timed out for **${duration} minute(s)**.\n\n**Reason:** ${reason}`,
+            flags: MessageFlags.Ephemeral,
+          });
+
+          console.log(
+            `⏱️ ${targetMember.user.tag} was timed out for ${duration} minute(s) by ${interaction.user.tag}. Reason: ${reason}`
+          );
+
+          return;
+        }
 
         return;
       }
@@ -1151,9 +1485,18 @@ client.on('interactionCreate', async interaction => {
           'Giveaway reward claim'
         );
 
-        // Automatically remove the Giveaway role after 24 hours
-        // if Tickety has not already removed it.
+        // Automatically remove the Giveaway role
+        // after 24 hours if Tickety has not removed it.
         scheduleGiveawayRoleExpiration(member.id);
+
+        // Send claim log to separate Giveaway Log channel.
+        await sendGiveawayLog(
+          giveawayLogEmbed(
+            member,
+            '🎁 Giveaway Role Claimed',
+            'Member claimed the @Giveaways role to begin a giveaway reward claim.'
+          )
+        );
 
         await interaction.reply({
           content:
