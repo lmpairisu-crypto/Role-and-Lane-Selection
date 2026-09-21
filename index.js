@@ -56,9 +56,6 @@ const {
   ROLE_LANE_CHANNEL_ID,
   LOG_CHANNEL_ID,
 
-  // Giveaway
-  GIVEAWAY_CHANNEL_ID,
-
   LAMPOON_GIF_URL,
 
   ROLE_FIGHTER,
@@ -74,6 +71,8 @@ const {
   ROLE_FARMLANE,
   ROLE_ROAMER,
   ROLE_VERSATILE,
+
+  GIVEAWAY_CHANNEL_ID,
 } = process.env;
 
 // ==========================================
@@ -81,8 +80,41 @@ const {
 // ==========================================
 
 const AVISALA = '<a:Avisala:1542448826265243660>';
-
 const GIVEAWAY_ROLE_ID = '1546589750549418044';
+
+// ==========================================
+// VALIDATION
+// ==========================================
+
+if (!DISCORD_TOKEN) {
+  console.error('❌ DISCORD_TOKEN is missing.');
+  process.exit(1);
+}
+
+if (!CLIENT_ID) {
+  console.error('❌ CLIENT_ID is missing.');
+  process.exit(1);
+}
+
+if (!GUILD_ID) {
+  console.error('❌ GUILD_ID is missing.');
+  process.exit(1);
+}
+
+if (!ROLE_LANE_CHANNEL_ID) {
+  console.error('❌ ROLE_LANE_CHANNEL_ID is missing.');
+  process.exit(1);
+}
+
+if (!LOG_CHANNEL_ID) {
+  console.error('❌ LOG_CHANNEL_ID is missing.');
+  process.exit(1);
+}
+
+if (!GIVEAWAY_CHANNEL_ID) {
+  console.error('❌ GIVEAWAY_CHANNEL_ID is missing.');
+  process.exit(1);
+}
 
 // ==========================================
 // ROLE DATA
@@ -216,7 +248,7 @@ function selectedText(member, items) {
   const selected = getSelectedItems(member, items);
 
   if (!selected.length) {
-    return 'None selected';
+    return '`None selected`';
   }
 
   return selected
@@ -233,14 +265,14 @@ function mainEmbed() {
     .setColor(0x3299DB)
     .setTitle('🎮 LAMPOON ROLE & LANE SELECTION')
     .setDescription(
-      `${AVISALA} ROLE & LANE GUIDE
+      `${AVISALA} **ROLE & LANE GUIDE**
 
-Your selection automatically updates your LAMPOON Discord roles.
+**Your selection automatically updates your LAMPOON Discord roles.**
 
-⚔️ Role
+⚔️ **Role**
 Choose one or more Hero Roles you are comfortable playing in-game.
 
-🛣️ Lane
+🛣️ **Lane**
 Choose one or more Lane Roles to gain their corresponding server colors.
 
 You can change your Role or Lane selections anytime.`
@@ -260,7 +292,7 @@ function roleEmbed() {
     .setColor(0xC0C0C0)
     .setTitle('⚔️ ROLE SELECTION')
     .setDescription(
-      `${AVISALA} Choose your Hero Roles
+      `${AVISALA} **Choose your Hero Roles**
 
 Select one or more roles that represent the heroes you are comfortable playing.
 
@@ -281,7 +313,7 @@ function laneEmbed() {
     .setColor(0xFFD700)
     .setTitle('🛣️ LANE SELECTION')
     .setDescription(
-      `${AVISALA} Choose your Lanes
+      `${AVISALA} **Choose your Lanes**
 
 Select one or more lanes you are comfortable playing.
 
@@ -422,12 +454,12 @@ function currentSelectionEmbed(member) {
     .setColor(0x3299DB)
     .setTitle('✦ CURRENTLY SELECTED ✦')
     .setDescription(
-      `${AVISALA} Your current selections are private.
+      `${AVISALA} **Your current selections are private.**
 
-⚔️ Hero Roles
+⚔️ **Hero Roles**
 ${selectedText(member, ROLES)}
 
-🛣️ Lanes
+🛣️ **Lanes**
 ${selectedText(member, LANES)}
 
 Only you can view this selection.`
@@ -520,7 +552,7 @@ function roleLogEmbed(member, added, removed) {
   if (!added.length && !removed.length) {
     embed.addFields({
       name: 'ℹ️ Changes',
-      value: 'No changes',
+      value: '`No changes`',
       inline: false,
     });
   }
@@ -564,7 +596,7 @@ function laneLogEmbed(member, added, removed) {
   if (!added.length && !removed.length) {
     embed.addFields({
       name: 'ℹ️ Changes',
-      value: 'No changes',
+      value: '`No changes`',
       inline: false,
     });
   }
@@ -743,7 +775,7 @@ async function clearLanes(member) {
 }
 
 // ==========================================
-// FIND / CREATE MAIN PANEL
+// FIND / CREATE ROLE & LANE PANEL
 // ==========================================
 
 async function sendOrFindPanel() {
@@ -802,40 +834,36 @@ async function sendOrFindPanel() {
 // GIVEAWAY EMBED
 // ==========================================
 
-function giveawayEmbed() {
+function createGiveawayEmbed() {
   return new EmbedBuilder()
     .setColor(0xC0C0C0)
     .setTitle('🎁 GIVEAWAY ROLE CLAIM')
     .setDescription(
-      `Congratulations to all eligible giveaway winners! 🎉
-
-If you are **claiming your giveaway reward**, click the **@Giveaways** button below to receive the Giveaway role.
-
-### 🎁 CLAIM YOUR REWARD
-
-Click **@Giveaways** to claim your temporary Giveaway role.
-
-After claiming the role, proceed with the designated giveaway ticket to complete your reward claim with the staff team.
-
-### ⚠️ IMPORTANT REMINDERS
-
-${AVISALA} The **@Giveaways** role is only for members who are currently claiming a giveaway reward.
-
-${AVISALA} **Do not claim the role if you are not claiming a reward.**
-
-${AVISALA} Keep your reward claim and ticket private.
-
-${AVISALA} Do not screenshot or expose the private ticket.
-
-${AVISALA} Do not share the ticket contents or the sender's information.
-
-${AVISALA} Follow the instructions provided by the staff team.
-
-${AVISALA} When your giveaway ticket is closed, **Tickety Bot will remove the @Giveaways role**.
-
-🎁 **Ready to claim your reward?**
-
-Click **@Giveaways** below to claim your role.`
+      [
+        'Congratulations to all eligible giveaway winners! 🎉',
+        '',
+        'If you are **claiming your giveaway reward**, click the **@Giveaways** button below to receive the Giveaway role.',
+        '',
+        '### 🎁 CLAIM YOUR REWARD',
+        '',
+        'Click **@Giveaways** to claim your temporary Giveaway role.',
+        '',
+        'After claiming the role, proceed with the designated giveaway ticket to complete your reward claim with the staff team.',
+        '',
+        '### ⚠️ IMPORTANT REMINDERS',
+        '',
+        `${AVISALA} **ᴛʜᴇ @Giveaways ʀᴏʟᴇ ɪs ᴏɴʟʏ ғᴏʀ ᴍᴇᴍʙᴇʀs ᴡʜᴏ ᴀʀᴇ ᴄᴜʀʀᴇɴᴛʟʏ ᴄʟᴀɪᴍɪɴɢ ᴀ ɢɪᴠᴇᴀᴡᴀʏ ʀᴇᴡᴀʀᴅ.**`,
+        `${AVISALA} **ᴅᴏ ɴᴏᴛ ᴄʟᴀɪᴍ ᴛʜᴇ ʀᴏʟᴇ ɪғ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴄʟᴀɪᴍɪɴɢ ᴀ ʀᴇᴡᴀʀᴅ.**`,
+        `${AVISALA} **ᴋᴇᴇᴘ ʏᴏᴜʀ ʀᴇᴡᴀʀᴅ ᴄʟᴀɪᴍ ᴀɴᴅ ᴛɪᴄᴋᴇᴛ ᴘʀɪᴠᴀᴛᴇ.**`,
+        `${AVISALA} **ᴅᴏ ɴᴏᴛ sᴄʀᴇᴇɴsʜᴏᴛ ᴏʀ ᴇxᴘᴏsᴇ ᴛʜᴇ ᴘʀɪᴠᴀᴛᴇ ᴛɪᴄᴋᴇᴛ.**`,
+        `${AVISALA} **ᴅᴏ ɴᴏᴛ sʜᴀʀᴇ ᴛʜᴇ ᴛɪᴄᴋᴇᴛ ᴄᴏɴᴛᴇɴᴛs ᴏʀ ᴛʜᴇ sᴇɴᴅᴇʀ's ɪɴғᴏʀᴍᴀᴛɪᴏɴ.**`,
+        `${AVISALA} **ғᴏʟʟᴏᴡ ᴛʜᴇ ɪɴsᴛʀᴜᴄᴛɪᴏɴs ᴘʀᴏᴠɪᴅᴇᴅ ʙʏ ᴛʜᴇ sᴛᴀғғ ᴛᴇᴀᴍ.**`,
+        `${AVISALA} **ᴡʜᴇɴ ʏᴏᴜʀ ɢɪᴠᴇᴀᴡᴀʏ ᴛɪᴄᴋᴇᴛ ɪs ᴄʟᴏsᴇᴅ, ᴛɪᴄᴋᴇᴛʏ ʙᴏᴛ ᴡɪʟʟ ʀᴇᴍᴏᴠᴇ ᴛʜᴇ @Giveaways ʀᴏʟᴇ.**`,
+        '',
+        '🎁 **Ready to claim your reward?**',
+        '',
+        'Click **@Giveaways** below to claim your role.',
+      ].join('\n')
     )
     .setFooter({
       text: 'LAMPOON • GIVEAWAY ROLE CLAIM',
@@ -846,90 +874,76 @@ Click **@Giveaways** below to claim your role.`
 // GIVEAWAY BUTTON
 // ==========================================
 
-function giveawayButtons() {
-  return [
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('claim_giveaways')
-        .setLabel('@Giveaways')
-        .setEmoji('🎁')
-        .setStyle(ButtonStyle.Secondary)
-    ),
-  ];
+function createGiveawayButton() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('claim_giveaways')
+      .setLabel('@Giveaways')
+      .setEmoji('🎁')
+      .setStyle(ButtonStyle.Secondary)
+  );
 }
 
 // ==========================================
-// FIND / CREATE GIVEAWAY PANEL
+// FIND / UPDATE GIVEAWAY PANEL
 // ==========================================
 
-async function sendOrFindGiveawayPanel() {
-  if (!GIVEAWAY_CHANNEL_ID) {
-    console.error(
-      '❌ GIVEAWAY_CHANNEL_ID is not configured.'
+async function setupGiveawayPanel() {
+  try {
+    const channel = await client.channels.fetch(
+      GIVEAWAY_CHANNEL_ID
     );
 
-    return;
-  }
-
-  const channel = await client.channels
-    .fetch(GIVEAWAY_CHANNEL_ID)
-    .catch(() => null);
-
-  if (!channel || !channel.isTextBased()) {
-    console.error(
-      '❌ Giveaway channel not found.'
-    );
-
-    return;
-  }
-
-  const messages = await channel.messages
-    .fetch({ limit: 100 })
-    .catch(() => null);
-
-  if (!messages) {
-    console.error(
-      '❌ Could not fetch giveaway channel messages.'
-    );
-
-    return;
-  }
-
-  const existing = messages.find(message => {
-    if (message.author.id !== client.user.id) {
-      return false;
+    if (!channel || !channel.isTextBased()) {
+      console.error(
+        '❌ Giveaway channel could not be found or is not a text channel.'
+      );
+      return;
     }
 
-    if (!message.embeds.length) {
-      return false;
+    const messages = await channel.messages.fetch({
+      limit: 50,
+    });
+
+    const existingPanel = messages.find(
+      message =>
+        message.author.id === client.user.id &&
+        message.components.some(row =>
+          row.components.some(
+            component =>
+              component.customId === 'claim_giveaways'
+          )
+        )
+    );
+
+    const embed = createGiveawayEmbed();
+    const row = createGiveawayButton();
+
+    if (existingPanel) {
+      await existingPanel.edit({
+        embeds: [embed],
+        components: [row],
+      });
+
+      console.log(
+        `🎁 Giveaway claim panel updated in #${channel.name}`
+      );
+    } else {
+      await channel.send({
+        embeds: [embed],
+        components: [row],
+      });
+
+      console.log(
+        `🎁 Giveaway claim panel sent in #${channel.name}`
+      );
     }
-
-    return (
-      message.embeds[0].title ===
-      '🎁 GIVEAWAY ROLE CLAIM'
+  } catch (error) {
+    console.error(
+      '❌ Failed to setup Giveaway claim panel:',
+      error
     );
-  });
-
-  const payload = {
-    embeds: [giveawayEmbed()],
-    components: giveawayButtons(),
-  };
-
-  if (existing) {
-    await existing.edit(payload);
-
-    console.log(
-      'Existing Giveaway Claim panel updated.'
-    );
-
-    return;
   }
-
-  await channel.send(payload);
-
-  console.log(
-    'New Giveaway Claim panel created.'
-  );
 }
 
 // ==========================================
@@ -939,15 +953,11 @@ async function sendOrFindGiveawayPanel() {
 const commands = [
   new SlashCommandBuilder()
     .setName('my-selection')
-    .setDescription(
-      'View your current Role and Lane selections.'
-    ),
+    .setDescription('View your current Role and Lane selections.'),
 
   new SlashCommandBuilder()
     .setName('reset-selection')
-    .setDescription(
-      'Clear all of your Role and Lane selections.'
-    ),
+    .setDescription('Clear all of your Role and Lane selections.'),
 ].map(command => command.toJSON());
 
 // ==========================================
@@ -1011,6 +1021,8 @@ client.on('interactionCreate', async interaction => {
 
         return;
       }
+
+      return;
     }
 
     // ========================================
@@ -1018,53 +1030,40 @@ client.on('interactionCreate', async interaction => {
     // ========================================
 
     if (interaction.isButton()) {
-      const member = interaction.member;
 
       // --------------------------------------
       // GIVEAWAY ROLE CLAIM
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'claim_giveaways'
-      ) {
-        await interaction.deferReply({
-          flags: MessageFlags.Ephemeral,
-        });
+      if (interaction.customId === 'claim_giveaways') {
 
-        if (!GIVEAWAY_ROLE_ID) {
-          await interaction.editReply({
+        if (interaction.channelId !== GIVEAWAY_CHANNEL_ID) {
+          await interaction.reply({
             content:
-              '❌ The Giveaway role is not configured.',
+              '❌ The Giveaway role can only be claimed in the designated giveaway channel.',
+            flags: MessageFlags.Ephemeral,
           });
 
           return;
         }
 
-        const giveawayRole =
-          interaction.guild.roles.cache.get(
-            GIVEAWAY_ROLE_ID
-          );
+        const member = interaction.member;
 
-        if (!giveawayRole) {
-          await interaction.editReply({
+        if (!member) {
+          await interaction.reply({
             content:
-              '❌ The Giveaway role could not be found.',
+              '❌ I could not find your server membership.',
+            flags: MessageFlags.Ephemeral,
           });
 
           return;
         }
 
-        if (
-          member.roles.cache.has(
-            GIVEAWAY_ROLE_ID
-          )
-        ) {
-          await interaction.editReply({
+        if (member.roles.cache.has(GIVEAWAY_ROLE_ID)) {
+          await interaction.reply({
             content:
-              `🎁 You already have the **${giveawayRole.name}** role.
-
-Please proceed to the designated giveaway ticket to claim your reward.`,
+              '🎁 You already have the **@Giveaways** role. You can proceed with your reward claim.',
+            flags: MessageFlags.Ephemeral,
           });
 
           return;
@@ -1075,17 +1074,20 @@ Please proceed to the designated giveaway ticket to claim your reward.`,
           'Giveaway reward claim'
         );
 
-        await interaction.editReply({
+        await interaction.reply({
           content:
-            `🎁 **@Giveaways role claimed successfully!**
-
-You may now create the designated giveaway ticket to claim your reward.
-
-${AVISALA} Please keep your ticket private and follow the staff instructions.`,
+            '🎁 **Giveaway role claimed successfully!**\n\nYou now have the **@Giveaways** role and can proceed with your reward claim.',
+          flags: MessageFlags.Ephemeral,
         });
+
+        console.log(
+          `🎁 ${member.user.tag} claimed the Giveaway role.`
+        );
 
         return;
       }
+
+      const member = interaction.member;
 
       // --------------------------------------
       // OPEN ROLE MENU
@@ -1125,10 +1127,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // CURRENT SELECTION
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_current'
-      ) {
+      if (interaction.customId === 'lampoon_current') {
         await interaction.reply({
           embeds: [
             currentSelectionEmbed(member),
@@ -1144,10 +1143,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // SWITCH TO ROLE
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_switch_role'
-      ) {
+      if (interaction.customId === 'lampoon_switch_role') {
         await interaction.update({
           embeds: [roleEmbed()],
           components: [
@@ -1163,10 +1159,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // SWITCH TO LANE
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_switch_lane'
-      ) {
+      if (interaction.customId === 'lampoon_switch_lane') {
         await interaction.update({
           embeds: [laneEmbed()],
           components: [
@@ -1182,10 +1175,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // ROLE DONE
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_role_done'
-      ) {
+      if (interaction.customId === 'lampoon_role_done') {
         await interaction.update({
           embeds: [
             currentSelectionEmbed(member),
@@ -1200,10 +1190,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // LANE DONE
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_lane_done'
-      ) {
+      if (interaction.customId === 'lampoon_lane_done') {
         await interaction.update({
           embeds: [
             currentSelectionEmbed(member),
@@ -1218,10 +1205,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // CLEAR ROLES
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_clear_roles'
-      ) {
+      if (interaction.customId === 'lampoon_clear_roles') {
         await interaction.deferUpdate();
 
         await clearRoles(member);
@@ -1240,10 +1224,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // CLEAR LANES
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_clear_lanes'
-      ) {
+      if (interaction.customId === 'lampoon_clear_lanes') {
         await interaction.deferUpdate();
 
         await clearLanes(member);
@@ -1262,19 +1243,26 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // CLOSE
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_close'
-      ) {
+      if (interaction.customId === 'lampoon_close') {
         await interaction.update({
-          content:
-            '✦ **LAMPOON selection closed.**',
+          content: '✦ **LAMPOON selection closed.**',
           embeds: [],
           components: [],
         });
 
         return;
       }
+
+      // --------------------------------------
+      // UNKNOWN BUTTON
+      // --------------------------------------
+
+      await interaction.reply({
+        content: '❌ This button is not configured.',
+        flags: MessageFlags.Ephemeral,
+      });
+
+      return;
     }
 
     // ========================================
@@ -1288,10 +1276,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // ROLE SELECT
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_role_select'
-      ) {
+      if (interaction.customId === 'lampoon_role_select') {
         await interaction.deferUpdate();
 
         await updateRoleSelection(
@@ -1314,10 +1299,7 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
       // LANE SELECT
       // --------------------------------------
 
-      if (
-        interaction.customId ===
-        'lampoon_lane_select'
-      ) {
+      if (interaction.customId === 'lampoon_lane_select') {
         await interaction.deferUpdate();
 
         await updateLaneSelection(
@@ -1335,18 +1317,15 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
 
         return;
       }
+
+      return;
     }
+
   } catch (error) {
-    console.error(
-      '❌ Interaction error:',
-      error
-    );
+    console.error('❌ Interaction error:', error);
 
     try {
-      if (
-        interaction.deferred ||
-        interaction.replied
-      ) {
+      if (interaction.deferred || interaction.replied) {
         await interaction.editReply({
           content:
             '❌ Something went wrong while processing your selection. Please try again.',
@@ -1374,18 +1353,12 @@ ${AVISALA} Please keep your ticket private and follow the staff instructions.`,
 // ==========================================
 
 client.once('clientReady', async () => {
-  console.log(
-    `Logged in as ${client.user.tag}`
-  );
+  console.log(`Logged in as ${client.user.tag}`);
 
   try {
     await registerSlashCommands();
-
-    // Existing Role & Lane panel
     await sendOrFindPanel();
-
-    // Added Giveaway Claim panel
-    await sendOrFindGiveawayPanel();
+    await setupGiveawayPanel();
   } catch (error) {
     console.error(
       '❌ Startup task error:',
