@@ -1859,12 +1859,6 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
-      if (interaction.isStringSelectMenu() && interaction.customId === 'lampoon_cc_platform_select') {
-        await interaction.deferUpdate();
-        pendingPlatformSelections.set(interaction.user.id, interaction.values);
-        return;
-      }
-
       // --------------------------------------
       // PRIVATE CONTENT CREATOR PLATFORM ROLE
       // --------------------------------------
@@ -2128,6 +2122,13 @@ client.on('interactionCreate', async interaction => {
     // ========================================
 
     if (interaction.isStringSelectMenu()) {
+      // Handle the private Content Creator platform multi-select here (not inside the button branch).
+      if (interaction.customId === 'lampoon_cc_platform_select') {
+        await interaction.deferUpdate();
+        pendingPlatformSelections.set(interaction.user.id, interaction.values);
+        return;
+      }
+
       const member = interaction.member;
 
       // --------------------------------------
