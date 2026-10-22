@@ -807,13 +807,13 @@ const CONTENT_CREATOR_TYPES = [
   },
   {
     key: 'general_cc',
-    name: 'General Content Creator',
+    name: 'General CC',
     emoji: '🎮',
     roleId: '1537897642380492820',
   },
   {
     key: 'satirical_cc',
-    name: 'Satirical Content Creator',
+    name: 'Satirical CC',
     emoji: '🎬',
     roleId: '1537897725968908470',
   },
@@ -864,8 +864,8 @@ React with the matching emoji below to receive a Content Creator type role. You 
 
 📽️ **Streamer**
 🎨 **Artist**
-🎬 **Satirical Content Creator**
-🎮 **General Content Creator**
+🎬 **Satirical CC**
+🎮 **General CC**
 
 After choosing a type, click **Select Platforms** below to privately choose multiple social platforms, then press **Done** to receive those roles.
 
@@ -887,23 +887,23 @@ function contentCreatorTypeButtons() {
   ];
 }
 
-function contentCreatorPlatformEmbed(color = 0x3299DB, selectedPlatform = null) {
+function contentCreatorPlatformEmbed(_color = 0xC0C0C0, selectedPlatform = null) {
   const selectedText = selectedPlatform
-    ? `\n\n${selectedPlatform.emoji} **${selectedPlatform.name}** role selected.`
+    ? `\n\n${selectedPlatform.emoji} **\`${selectedPlatform.name}\`** role selected.`
     : '';
 
   return new EmbedBuilder()
-    .setColor(color)
+    .setColor(0xC0C0C0)
     .setTitle('🌐 CONTENT CREATOR PLATFORMS')
     .setDescription(
       `${AVISALA} **Choose your social media platforms privately.**
 
-Click each platform button to receive its role. You can select multiple platforms; press **Done** when finished.
+Choose one or more platforms from the menu below, then press **Done** to receive the selected roles.
 
-1️⃣ <:Tiktok:1542438653094268969> **TikTok**
-2️⃣ <:Facebook:1542438933244416100> **Facebook**
-3️⃣ <:YouTube:1562770729471316051> **YouTube**
-4️⃣ <:Twitch:1562770473153073254> **Twitch**${selectedText}`
+<:Tiktok:1542438653094268969> **\`TikTok\`**
+<:Facebook:1542438933244416100> **\`Facebook\`**
+<:YouTube:1562770729471316051> **\`YouTube\`**
+<:Twitch:1562770473153073254> **\`Twitch\`**${selectedText}`
     )
     .setThumbnail(LAMPOON_GIF_URL)
     .setFooter({ text: 'LAMPOON • Private Content Creator Selection' });
@@ -1022,7 +1022,7 @@ async function setupContentCreatorPanel() {
     console.log('New Content Creator panel created.');
   }
 
-  // Real numbered Discord reactions for Content Creator type roles.
+  // Actual type-emoji Discord reactions for Content Creator type roles.
   for (const emoji of CONTENT_CREATOR_REACTIONS) {
     try { await panelMessage.react(emoji); }
     catch (error) { console.error(`Could not add reaction ${emoji}:`, error.message); }
@@ -1811,8 +1811,8 @@ client.on('interactionCreate', async interaction => {
       }
 
       if (interaction.isStringSelectMenu() && interaction.customId === 'lampoon_cc_platform_select') {
-        pendingPlatformSelections.set(interaction.user.id, interaction.values);
         await interaction.deferUpdate();
+        pendingPlatformSelections.set(interaction.user.id, interaction.values);
         return;
       }
 
@@ -1853,7 +1853,7 @@ client.on('interactionCreate', async interaction => {
           pendingPlatformSelections.delete(interaction.user.id);
           await interaction.editReply({
             content: selectedKeys.length
-              ? `✅ **Platform selection completed.** ${selectedKeys.map(key => CONTENT_CREATOR_PLATFORMS.find(p => p.key === key)?.name).filter(Boolean).join(', ')} selected. ${granted.length} new role(s) granted.${failed.length ? ` Failed to grant: ${failed.join(', ')}. Check the bot's role hierarchy and permissions.` : ''}`
+              ? `✅ **Platform selection completed.** ${selectedKeys.map(key => { const name = CONTENT_CREATOR_PLATFORMS.find(p => p.key === key)?.name; return name ? `\`${name}\`` : null; }).filter(Boolean).join(', ')} selected. ${granted.length} new role(s) granted.${failed.length ? ` Failed to grant: ${failed.join(', ')}. Check the bot's role hierarchy and permissions.` : ''}`
               : 'No platforms selected. You can reopen the menu and choose platforms.',
             embeds: [],
             components: [],
@@ -1872,13 +1872,24 @@ client.on('interactionCreate', async interaction => {
           return;
         }
 
-        const added = await selectContentCreatorPlatform(member, platform);
+        // Acknowledge before role assignment and logging to avoid Discord's 3-second timeout.
+        await interaction.deferUpdate();
+        let added = false;
+        let roleError = null;
+        try {
+          added = await selectContentCreatorPlatform(member, platform);
+        } catch (error) {
+          roleError = error;
+          console.error(`Could not grant ${platform.name} role:`, error);
+        }
 
-        await interaction.update({
-          content: added
-            ? `✅ ${platform.emoji} **${platform.name} role granted.** You can select more platforms, or press **Done** to close this private menu.`
-            : `ℹ️ You already have the ${platform.emoji} **${platform.name}** role. You can select more platforms, or press **Done** to close this private menu.`,
-          embeds: [contentCreatorPlatformEmbed(platform.color, platform)],
+        await interaction.editReply({
+          content: roleError
+            ? `❌ Could not grant the **\`${platform.name}\`** role. Please check the bot's role hierarchy and permissions, then try again.`
+            : added
+              ? `✅ ${platform.emoji} **\`${platform.name}\` role granted.** You can select more platforms, or press **Done** to close this private menu.`
+              : `ℹ️ You already have the ${platform.emoji} **\`${platform.name}\`** role. You can select more platforms, or press **Done** to close this private menu.`,
+          embeds: [contentCreatorPlatformEmbed(0xC0C0C0, platform)],
           components: contentCreatorPlatformButtons(),
         });
 
