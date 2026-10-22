@@ -862,10 +862,10 @@ function contentCreatorPanelEmbed() {
 
 React with the matching emoji below to receive a Content Creator type role. You must already have the <@&${CONTENT_CREATOR_ROLE_ID}> role. You can react to multiple types.
 
-📽️ **Streamer**
-🎨 **Artist**
-🎬 **Satirical CC**
-🎮 **General CC**
+📽️ **\`Streamer\`**
+🎨 **\`Artist\`**
+🎬 **\`Satirical CC\`**
+🎮 **\`General CC\`**
 
 After choosing a type, click **Select Platforms** below to privately choose multiple social platforms, then press **Done** to receive those roles.
 
@@ -1022,10 +1022,44 @@ async function setupContentCreatorPanel() {
     console.log('New Content Creator panel created.');
   }
 
-  // Actual type-emoji Discord reactions for Content Creator type roles.
+  // Restore any missing type reactions whenever the bot starts/wakes.
+  // Discord keeps existing reactions on the message; only missing ones are added.
+  const currentReactions = await panelMessage.reactions.fetch().catch(() => null);
   for (const emoji of CONTENT_CREATOR_REACTIONS) {
-    try { await panelMessage.react(emoji); }
-    catch (error) { console.error(`Could not add reaction ${emoji}:`, error.message); }
+    try {
+      const alreadyExists = currentReactions?.some(reaction => reaction.emoji.name === emoji);
+      if (!alreadyExists) await panelMessage.react(emoji);
+    } catch (error) {
+      console.error(`Could not restore reaction ${emoji}:`, error.message);
+    }
+  }
+
+  // Catch up reactions added while the bot was asleep/offline. Discord does
+  // not replay missed reaction events, so inspect the panel's current users.
+  const typeByReaction = { '📽️': 'streamer', '🎨': 'artist', '🎬': 'satirical_cc', '🎮': 'general_cc' };
+  const refreshedReactions = await panelMessage.reactions.fetch().catch(() => null);
+  if (refreshedReactions) {
+    for (const emoji of CONTENT_CREATOR_REACTIONS) {
+      const reaction = refreshedReactions.find(item => item.emoji.name === emoji);
+      if (!reaction) continue;
+      const type = CONTENT_CREATOR_TYPES.find(item => item.key === typeByReaction[emoji]);
+      if (!type) continue;
+      const users = await reaction.users.fetch().catch(() => null);
+      if (!users) continue;
+      for (const user of users.values()) {
+        if (user.bot) continue;
+        try {
+          const member = await panelMessage.guild.members.fetch(user.id);
+          if (!member.roles.cache.has(CONTENT_CREATOR_ROLE_ID)) {
+            await reaction.users.remove(user.id).catch(() => null);
+            continue;
+          }
+          await selectContentCreatorType(member, type);
+        } catch (error) {
+          console.error(`Could not sync ${type.name} reaction for ${user.tag}:`, error.message);
+        }
+      }
+    }
   }
 }
 
@@ -1784,15 +1818,26 @@ client.on('interactionCreate', async interaction => {
           return;
         }
 
-        const typeAdded = await selectContentCreatorType(member, selectedType);
+        // Acknowledge the component interaction immediately, so role/log API
+        // calls cannot trigger Discord's "This interaction failed" timeout.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        let typeAdded = false;
+        let typeError = null;
+        try {
+          typeAdded = await selectContentCreatorType(member, selectedType);
+        } catch (error) {
+          typeError = error;
+          console.error(`Could not grant ${selectedType.name} role:`, error);
+        }
 
-        await interaction.reply({
-          content: typeAdded
-            ? `✅ **${selectedType.name}** role granted. You may select another type if applicable.`
-            : `ℹ️ You already have the **${selectedType.name}** role. You can still choose your platforms below.`,
+        await interaction.editReply({
+          content: typeError
+            ? `❌ Could not grant the **\`${selectedType.name}\`** role. Please check the bot's role hierarchy and permissions, then try again.`
+            : typeAdded
+              ? `✅ **\`${selectedType.name}\`** role granted. You may select another type if applicable.`
+              : `ℹ️ You already have the **\`${selectedType.name}\`** role. You can still choose your platforms below.`,
           embeds: [contentCreatorPlatformEmbed()],
           components: contentCreatorPlatformButtons(),
-          flags: MessageFlags.Ephemeral,
         });
 
         return;
