@@ -1024,7 +1024,10 @@ async function setupContentCreatorPanel() {
 
   // Restore any missing type reactions whenever the bot starts/wakes.
   // Discord keeps existing reactions on the message; only missing ones are added.
-  const currentReactions = await panelMessage.reactions.fetch().catch(() => null);
+  // Discord.js v14 exposes the reaction manager's cached reactions via .cache;
+  // the manager itself does not have a fetch() method. Refresh the message first.
+  panelMessage = await channel.messages.fetch(panelMessage.id).catch(() => panelMessage);
+  const currentReactions = panelMessage.reactions.cache;
   for (const emoji of CONTENT_CREATOR_REACTIONS) {
     try {
       const alreadyExists = currentReactions?.some(reaction => reaction.emoji.name === emoji);
@@ -1037,8 +1040,9 @@ async function setupContentCreatorPanel() {
   // Catch up reactions added while the bot was asleep/offline. Discord does
   // not replay missed reaction events, so inspect the panel's current users.
   const typeByReaction = { '📽️': 'streamer', '🎨': 'artist', '🎬': 'satirical_cc', '🎮': 'general_cc' };
-  const refreshedReactions = await panelMessage.reactions.fetch().catch(() => null);
-  if (refreshedReactions) {
+  panelMessage = await channel.messages.fetch(panelMessage.id).catch(() => panelMessage);
+  const refreshedReactions = panelMessage.reactions.cache;
+  if (refreshedReactions.size > 0) {
     for (const emoji of CONTENT_CREATOR_REACTIONS) {
       const reaction = refreshedReactions.find(item => item.emoji.name === emoji);
       if (!reaction) continue;
