@@ -783,6 +783,267 @@ async function clearLanes(member) {
   return selected;
 }
 
+
+// ==========================================
+// CONTENT CREATOR TYPE & PLATFORM SELECTION
+// ==========================================
+
+const CONTENT_CREATOR_ROLE_ID = '1537899709686087781';
+const CONTENT_CREATOR_HELP_CHANNEL_ID = '1538957346729103480';
+
+const CONTENT_CREATOR_TYPES = [
+  {
+    key: 'artist',
+    name: 'Artist',
+    emoji: '🎨',
+    roleId: '1538257357212094554',
+  },
+  {
+    key: 'streamer',
+    name: 'Streamer',
+    emoji: '📽️',
+    roleId: '1538257196599607387',
+  },
+  {
+    key: 'general_cc',
+    name: 'General CC',
+    emoji: '🎮',
+    roleId: '1537897642380492820',
+  },
+  {
+    key: 'satirical_cc',
+    name: 'Satirical CC',
+    emoji: '🎬',
+    roleId: '1537897725968908470',
+  },
+];
+
+const CONTENT_CREATOR_PLATFORMS = [
+  {
+    key: 'tiktok',
+    name: 'TikTok',
+    emoji: '<:Tiktok:1542438653094268969>',
+    roleId: '1540023447785177218',
+    color: 0x000000,
+  },
+  {
+    key: 'facebook',
+    name: 'Facebook',
+    emoji: '<:Facebook:1542438933244416100>',
+    roleId: '1562680703114551306',
+    color: 0x1877F2,
+  },
+  {
+    key: 'youtube',
+    name: 'YouTube',
+    emoji: '<:YouTube:1562770729471316051>',
+    roleId: '1562680791828402308',
+    color: 0xFF0000,
+  },
+  {
+    key: 'twitch',
+    name: 'Twitch',
+    emoji: '<:Twitch:1562770473153073254>',
+    roleId: '1562680863991402556',
+    color: 0x9146FF,
+  },
+];
+
+function contentCreatorPanelEmbed() {
+  return new EmbedBuilder()
+    .setColor(0x3299DB)
+    .setTitle('🎥 LAMPOON CONTENT CREATOR SELECTION')
+    .setDescription(
+      `${AVISALA} **CONTENT CREATOR TYPE**
+
+Choose the emoji button that matches your Content Creator type. You must already have the <@&${CONTENT_CREATOR_ROLE_ID}> role to use this selection.
+
+📽️ **Streamer**
+🎨 **Artist**
+🎬 **Satirical CC**
+🎮 **General CC**
+
+After selecting your type, a private platform selection will appear. Select the platforms you use to receive their corresponding roles.
+
+If you do not have the Content Creator role, please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`
+    )
+    .setThumbnail(LAMPOON_GIF_URL)
+    .setFooter({ text: 'LAMPOON • Content Creator Selection' });
+}
+
+function contentCreatorTypeButtons() {
+  return [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_type_streamer')
+        .setLabel('Streamer')
+        .setEmoji('📽️')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_type_artist')
+        .setLabel('Artist')
+        .setEmoji('🎨')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_type_satirical_cc')
+        .setLabel('Satirical CC')
+        .setEmoji('🎬')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_type_general_cc')
+        .setLabel('General CC')
+        .setEmoji('🎮')
+        .setStyle(ButtonStyle.Secondary)
+    ),
+  ];
+}
+
+function contentCreatorPlatformEmbed(color = 0x3299DB, selectedPlatform = null) {
+  const selectedText = selectedPlatform
+    ? `\n\n${selectedPlatform.emoji} **${selectedPlatform.name}** role selected.`
+    : '';
+
+  return new EmbedBuilder()
+    .setColor(color)
+    .setTitle('🌐 CONTENT CREATOR PLATFORMS')
+    .setDescription(
+      `${AVISALA} **Choose your social media platforms privately.**
+
+Click each platform button to receive its role. You can select more than one platform.
+
+<:Tiktok:1542438653094268969> **TikTok**
+<:Facebook:1542438933244416100> **Facebook**
+<:YouTube:1562770729471316051> **YouTube**
+<:Twitch:1562770473153073254> **Twitch**${selectedText}`
+    )
+    .setThumbnail(LAMPOON_GIF_URL)
+    .setFooter({ text: 'LAMPOON • Private Content Creator Selection' });
+}
+
+function contentCreatorPlatformButtons() {
+  return [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_platform_tiktok')
+        .setLabel('TikTok')
+        .setEmoji('<:Tiktok:1542438653094268969>')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_platform_facebook')
+        .setLabel('Facebook')
+        .setEmoji('<:Facebook:1542438933244416100>')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_platform_youtube')
+        .setLabel('YouTube')
+        .setEmoji('<:YouTube:1562770729471316051>')
+        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_platform_twitch')
+        .setLabel('Twitch')
+        .setEmoji('<:Twitch:1562770473153073254>')
+        .setStyle(ButtonStyle.Secondary)
+    ),
+  ];
+}
+
+async function sendContentCreatorLog(member, added, removed) {
+  if (!added.length && !removed.length) return;
+
+  const logChannel = await client.channels
+    .fetch(LOG_CHANNEL_ID)
+    .catch(() => null);
+
+  if (logChannel && logChannel.isTextBased()) {
+    await logChannel.send({
+      embeds: [roleLogEmbed(member, added, removed)],
+    });
+  }
+}
+
+async function selectContentCreatorType(member, selectedType) {
+  const added = [];
+  const removed = [];
+
+  // A member may have only one Content Creator type role at a time.
+  for (const type of CONTENT_CREATOR_TYPES) {
+    const hasRole = member.roles.cache.has(type.roleId);
+
+    if (type.key === selectedType.key && !hasRole) {
+      await member.roles.add(type.roleId, 'Content Creator type selection');
+      added.push({ name: type.name, emoji: type.emoji });
+    } else if (type.key !== selectedType.key && hasRole) {
+      await member.roles.remove(type.roleId, 'Changed Content Creator type');
+      removed.push({ name: type.name, emoji: type.emoji });
+    }
+  }
+
+  await sendContentCreatorLog(member, added, removed);
+}
+
+async function selectContentCreatorPlatform(member, platform) {
+  if (member.roles.cache.has(platform.roleId)) {
+    return false;
+  }
+
+  await member.roles.add(platform.roleId, 'Content Creator platform selection');
+  const logChannel = await client.channels
+    .fetch(LOG_CHANNEL_ID)
+    .catch(() => null);
+
+  if (logChannel && logChannel.isTextBased()) {
+    await logChannel.send({
+      embeds: [
+        roleLogEmbed(
+          member,
+          [{ name: platform.name, emoji: platform.emoji }],
+          []
+        ),
+      ],
+    });
+  }
+
+  return true;
+}
+
+async function setupContentCreatorPanel() {
+  const channel = await client.channels
+    .fetch(ROLE_LANE_CHANNEL_ID)
+    .catch(() => null);
+
+  if (!channel || !channel.isTextBased()) {
+    console.error('❌ Content Creator selection channel not found.');
+    return;
+  }
+
+  const messages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
+
+  if (!messages) {
+    console.error('❌ Could not fetch messages for Content Creator panel.');
+    return;
+  }
+
+  const existing = messages.find(message =>
+    message.author.id === client.user.id &&
+    message.embeds.some(embed =>
+      embed.title === '🎥 LAMPOON CONTENT CREATOR SELECTION'
+    )
+  );
+
+  const payload = {
+    embeds: [contentCreatorPanelEmbed()],
+    components: contentCreatorTypeButtons(),
+  };
+
+  if (existing) {
+    await existing.edit(payload);
+    console.log('Existing Content Creator panel updated.');
+  } else {
+    await channel.send(payload);
+    console.log('New Content Creator panel created.');
+  }
+}
+
 // ==========================================
 // FIND / CREATE ROLE & LANE PANEL
 // ==========================================
@@ -1511,6 +1772,93 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
+      // --------------------------------------
+      // CONTENT CREATOR TYPE SELECTION
+      // --------------------------------------
+
+      if (interaction.customId.startsWith('lampoon_cc_type_')) {
+        const member = interaction.member;
+
+        if (!member.roles.cache.has(CONTENT_CREATOR_ROLE_ID)) {
+          await interaction.reply({
+            content:
+              `❌ You need the <@&${CONTENT_CREATOR_ROLE_ID}> role before selecting a Content Creator type. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`,
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        const typeKey = interaction.customId.replace('lampoon_cc_type_', '');
+        const selectedType = CONTENT_CREATOR_TYPES.find(type => type.key === typeKey);
+
+        if (!selectedType) {
+          await interaction.reply({
+            content: '❌ This Content Creator type is not configured.',
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        await selectContentCreatorType(member, selectedType);
+
+        await interaction.reply({
+          embeds: [contentCreatorPlatformEmbed()],
+          components: contentCreatorPlatformButtons(),
+          flags: MessageFlags.Ephemeral,
+        });
+
+        return;
+      }
+
+      // --------------------------------------
+      // PRIVATE CONTENT CREATOR PLATFORM ROLE
+      // --------------------------------------
+
+      if (interaction.customId.startsWith('lampoon_cc_platform_')) {
+        const member = interaction.member;
+
+        if (!member.roles.cache.has(CONTENT_CREATOR_ROLE_ID)) {
+          await interaction.reply({
+            content:
+              `❌ You need the <@&${CONTENT_CREATOR_ROLE_ID}> role before selecting a Content Creator platform. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`,
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        const platformKey = interaction.customId.replace('lampoon_cc_platform_', '');
+        const platform = CONTENT_CREATOR_PLATFORMS.find(item => item.key === platformKey);
+
+        if (!platform) {
+          await interaction.reply({
+            content: '❌ This platform is not configured.',
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        const added = await selectContentCreatorPlatform(member, platform);
+
+        await interaction.update({
+          content: added
+            ? `✅ ${platform.emoji} **${platform.name} role granted.** This private selection will close automatically.`
+            : `ℹ️ You already have the ${platform.emoji} **${platform.name}** role. This private selection will close automatically.`,
+          embeds: [],
+          components: [],
+        });
+
+        // Close the ephemeral selection after briefly showing the result.
+        setTimeout(async () => {
+          try {
+            await interaction.deleteReply();
+          } catch (error) {
+            // The ephemeral response may already have been dismissed.
+          }
+        }, 1800);
+
+        return;
+      }
+
       const member = interaction.member;
 
       // --------------------------------------
@@ -1782,6 +2130,7 @@ client.once('clientReady', async () => {
   try {
     await registerSlashCommands();
     await sendOrFindPanel();
+    await setupContentCreatorPanel();
     await setupGiveawayPanel();
   } catch (error) {
     console.error(
