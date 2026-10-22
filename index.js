@@ -807,13 +807,13 @@ const CONTENT_CREATOR_TYPES = [
   },
   {
     key: 'general_cc',
-    name: 'General CC',
+    name: 'General Content Creator',
     emoji: '🎮',
     roleId: '1537897642380492820',
   },
   {
     key: 'satirical_cc',
-    name: 'Satirical CC',
+    name: 'Satirical Content Creator',
     emoji: '🎬',
     roleId: '1537897725968908470',
   },
@@ -850,7 +850,7 @@ const CONTENT_CREATOR_PLATFORMS = [
   },
 ];
 
-const CONTENT_CREATOR_REACTIONS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣'];
+const CONTENT_CREATOR_REACTIONS = ['📽️', '🎨', '🎬', '🎮'];
 const pendingPlatformSelections = new Map();
 
 function contentCreatorPanelEmbed() {
@@ -860,12 +860,12 @@ function contentCreatorPanelEmbed() {
     .setDescription(
       `${AVISALA} **CONTENT CREATOR TYPE**
 
-React with the matching number below to receive a Content Creator type role. You must already have the <@&${CONTENT_CREATOR_ROLE_ID}> role. You can react to multiple numbers.
+React with the matching emoji below to receive a Content Creator type role. You must already have the <@&${CONTENT_CREATOR_ROLE_ID}> role. You can react to multiple types.
 
-1️⃣ 📽️ **Streamer**
-2️⃣ 🎨 **Artist**
-3️⃣ 🎬 **Satirical CC**
-4️⃣ 🎮 **General CC**
+📽️ **Streamer**
+🎨 **Artist**
+🎬 **Satirical Content Creator**
+🎮 **General Content Creator**
 
 After choosing a type, click **Select Platforms** below to privately choose multiple social platforms, then press **Done** to receive those roles.
 
@@ -919,7 +919,7 @@ function contentCreatorPlatformButtons() {
       label: platform.name,
       value: platform.key,
       description: `Select the ${platform.name} role`,
-      emoji: platform.key === 'tiktok' ? '🎵' : platform.key === 'facebook' ? '📘' : platform.key === 'youtube' ? '▶️' : '🟣',
+      emoji: { id: platform.key === 'tiktok' ? '1542438653094268969' : platform.key === 'facebook' ? '1542438933244416100' : platform.key === 'youtube' ? '1562770729471316051' : '1562770473153073254', name: platform.key === 'tiktok' ? 'Tiktok' : platform.key === 'facebook' ? 'Facebook' : platform.key === 'youtube' ? 'YouTube' : 'Twitch' },
     })));
   return [
     new ActionRowBuilder().addComponents(menu),
@@ -1833,19 +1833,27 @@ client.on('interactionCreate', async interaction => {
         }
 
         if (interaction.customId === 'lampoon_cc_platform_done') {
+          // Acknowledge immediately to avoid Discord's 3-second interaction timeout.
+          await interaction.deferUpdate();
           const selectedKeys = pendingPlatformSelections.get(interaction.user.id) || [];
           const granted = [];
+          const failed = [];
           for (const key of selectedKeys) {
             const platform = CONTENT_CREATOR_PLATFORMS.find(item => item.key === key);
             if (platform) {
-              const added = await selectContentCreatorPlatform(member, platform);
-              if (added) granted.push(platform);
+              try {
+                const added = await selectContentCreatorPlatform(member, platform);
+                if (added) granted.push(platform);
+              } catch (error) {
+                failed.push(platform.name);
+                console.error(`Could not grant ${platform.name} role:`, error);
+              }
             }
           }
           pendingPlatformSelections.delete(interaction.user.id);
-          await interaction.update({
+          await interaction.editReply({
             content: selectedKeys.length
-              ? `✅ **Platform selection completed.** ${selectedKeys.map(key => CONTENT_CREATOR_PLATFORMS.find(p => p.key === key)?.name).filter(Boolean).join(', ')} selected. ${granted.length} new role(s) granted.`
+              ? `✅ **Platform selection completed.** ${selectedKeys.map(key => CONTENT_CREATOR_PLATFORMS.find(p => p.key === key)?.name).filter(Boolean).join(', ')} selected. ${granted.length} new role(s) granted.${failed.length ? ` Failed to grant: ${failed.join(', ')}. Check the bot's role hierarchy and permissions.` : ''}`
               : 'No platforms selected. You can reopen the menu and choose platforms.',
             embeds: [],
             components: [],
@@ -2139,7 +2147,7 @@ client.on('interactionCreate', async interaction => {
 });
 
 // ==========================================
-// CONTENT CREATOR NUMBER REACTION ROLE GRANTS
+// CONTENT CREATOR TYPE EMOJI REACTION ROLE GRANTS
 // ==========================================
 
 client.on('messageReactionAdd', async (reaction, user) => {
@@ -2151,15 +2159,18 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if (!message.embeds.some(embed => embed.title === '🎥 LAMPOON CONTENT CREATOR SELECTION')) return;
 
     const emoji = reaction.emoji.name;
-    const typeByReaction = { '1️⃣': 'streamer', '2️⃣': 'artist', '3️⃣': 'satirical_cc', '4️⃣': 'general_cc' };
+    const typeByReaction = { '📽️': 'streamer', '🎨': 'artist', '🎬': 'satirical_cc', '🎮': 'general_cc' };
     if (!Object.prototype.hasOwnProperty.call(typeByReaction, emoji)) return;
     const type = CONTENT_CREATOR_TYPES.find(item => item.key === typeByReaction[emoji]);
     if (!type) return;
 
     const member = await message.guild.members.fetch(user.id);
     if (!member.roles.cache.has(CONTENT_CREATOR_ROLE_ID)) {
-      await user.send(`You need the <@&${CONTENT_CREATOR_ROLE_ID}> role before choosing a Content Creator type. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`).catch(() => {});
-      await reaction.users.remove(user.id).catch(() => {});
+      // Required behavior: remove only this member's reaction. Never DM,
+      // reply publicly, or attempt an ephemeral response from a raw reaction.
+      await reaction.users.remove(user.id).catch(error => {
+        console.error('Could not remove reaction from member without Content Creator role:', error.message);
+      });
       return;
     }
 
@@ -2169,7 +2180,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
       const logEmbed = new EmbedBuilder()
         .setColor(0xD4AF37)
         .setTitle('Content Creator Type Role Selection')
-        .setDescription(`${AVISALA} ${user} ${added ? 'received' : 'already has'} the **${type.name}** role via numbered reaction.`)
+        .setDescription(`${AVISALA} ${user} ${added ? 'received' : 'already has'} the **${type.name}** role via emoji reaction.`)
         .addFields({ name: 'Role', value: `<@&${type.roleId}>`, inline: true })
         .setTimestamp();
       await logChannel.send({ embeds: [logEmbed] });
@@ -2180,7 +2191,37 @@ client.on('messageReactionAdd', async (reaction, user) => {
 });
 
 client.on('messageReactionRemove', async (reaction, user) => {
-  // Removing a reaction does not remove a role; role grants are persistent unless staff remove them.
+  try {
+    if (user.bot) return;
+    if (reaction.partial) await reaction.fetch();
+    const message = reaction.message;
+    if (!message.guild || message.author?.id !== client.user.id) return;
+    if (!message.embeds.some(embed => embed.title === '🎥 LAMPOON CONTENT CREATOR SELECTION')) return;
+
+    const emoji = reaction.emoji.name;
+    const typeByReaction = { '📽️': 'streamer', '🎨': 'artist', '🎬': 'satirical_cc', '🎮': 'general_cc' };
+    if (!Object.prototype.hasOwnProperty.call(typeByReaction, emoji)) return;
+    const type = CONTENT_CREATOR_TYPES.find(item => item.key === typeByReaction[emoji]);
+    if (!type) return;
+
+    const member = await message.guild.members.fetch(user.id);
+    // Removing the reaction opts out of this role. Other selected type roles remain unchanged.
+    if (!member.roles.cache.has(type.roleId)) return;
+    await member.roles.remove(type.roleId, 'Content Creator type reaction removed');
+
+    const logChannel = await client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+    if (logChannel?.isTextBased()) {
+      const logEmbed = new EmbedBuilder()
+        .setColor(0xD4AF37)
+        .setTitle('Content Creator Type Role Removed')
+        .setDescription(`${AVISALA} ${user} removed the **${type.name}** role by removing their emoji reaction.`)
+        .addFields({ name: 'Role Removed', value: `<@&${type.roleId}>`, inline: true })
+        .setTimestamp();
+      await logChannel.send({ embeds: [logEmbed] });
+    }
+  } catch (error) {
+    console.error('Content Creator reaction role removal error:', error);
+  }
 });
 
 // ==========================================
