@@ -18,31 +18,42 @@ const {
   MessageFlags,
 } = require('discord.js');
 
-// ==========================================
-// RENDER HEALTH CHECK
-// ==========================================
 
-const PORT = Number(process.env.PORT) || 10000;
+ // ==========================================
+ // RENDER HEALTH CHECK
+ // ==========================================
 
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, {
-      'Content-Type': 'text/plain; charset=utf-8',
-    });
+ const PORT = Number(process.env.PORT) || 10000;
 
-    return res.end('OK');
-  }
+ const server = http.createServer((req, res) => {
+   if (req.url === '/health') {
+     const connected = client.isReady();
 
-  res.writeHead(200, {
-    'Content-Type': 'text/plain; charset=utf-8',
-  });
+     res.writeHead(connected ? 200 : 503, {
+       'Content-Type': 'application/json; charset=utf-8',
+     });
 
-  res.end('LAMPOON Role & Lane Bot is online.');
-});
+     return res.end(JSON.stringify({
+       web: 'online',
+       discord: connected ? 'connected' : 'disconnected',
+       bot: client.user?.tag ?? null,
+     }));
+   }
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🌐 Health server running on port ${PORT}`);
-});
+   res.writeHead(200, {
+     'Content-Type': 'text/plain; charset=utf-8',
+   });
+
+   res.end(
+     client.isReady()
+       ? 'LAMPOON Role & Lane Bot is connected to Discord.'
+       : 'Web server is online, but the Discord bot is disconnected.'
+   );
+ });
+
+ server.listen(PORT, '0.0.0.0', () => {
+   console.log(`🌐 Health server running on port ${PORT}`);
+ });
 
 // ==========================================
 // ENVIRONMENT VARIABLES
