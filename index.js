@@ -2243,18 +2243,22 @@ client.on('messageReactionRemove', async (reaction, user) => {
 // ==========================================
 
 client.once('clientReady', async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  console.log(`✅ Logged in as ${client.user.tag}`);
 
   try {
     await registerSlashCommands();
+    console.log('✅ Slash commands registered.');
+
     await sendOrFindPanel();
+    console.log('✅ Role & Lane panel ready.');
+
     await setupContentCreatorPanel();
+    console.log('✅ Content Creator panel ready.');
+
     await setupGiveawayPanel();
+    console.log('✅ Giveaway panel ready.');
   } catch (error) {
-    console.error(
-      '❌ Startup task error:',
-      error
-    );
+    console.error('❌ Startup task error:', error);
   }
 });
 
