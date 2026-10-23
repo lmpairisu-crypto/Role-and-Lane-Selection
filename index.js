@@ -862,10 +862,10 @@ function contentCreatorPanelEmbed() {
 
 React with the matching emoji below to receive a Content Creator type role. You must already have the <@&${CONTENT_CREATOR_ROLE_ID}> role. You can react to multiple types.
 
-📽️ **\`Streamer\`**
-🎨 **\`Artist\`**
-🎬 **\`Satirical CC\`**
-🎮 **\`General CC\`**
+📽️ **Streamer**
+🎨 **Artist**
+🎬 **Satirical CC**
+🎮 **General CC**
 
 After choosing a type, click **Select Platforms** below to privately choose multiple social platforms, then press **Done** to receive those roles.
 
@@ -1022,48 +1022,10 @@ async function setupContentCreatorPanel() {
     console.log('New Content Creator panel created.');
   }
 
-  // Restore any missing type reactions whenever the bot starts/wakes.
-  // Discord keeps existing reactions on the message; only missing ones are added.
-  // Discord.js v14 exposes the reaction manager's cached reactions via .cache;
-  // the manager itself does not have a fetch() method. Refresh the message first.
-  panelMessage = await channel.messages.fetch(panelMessage.id).catch(() => panelMessage);
-  const currentReactions = panelMessage.reactions.cache;
+  // Actual type-emoji Discord reactions for Content Creator type roles.
   for (const emoji of CONTENT_CREATOR_REACTIONS) {
-    try {
-      const alreadyExists = currentReactions?.some(reaction => reaction.emoji.name === emoji);
-      if (!alreadyExists) await panelMessage.react(emoji);
-    } catch (error) {
-      console.error(`Could not restore reaction ${emoji}:`, error.message);
-    }
-  }
-
-  // Catch up reactions added while the bot was asleep/offline. Discord does
-  // not replay missed reaction events, so inspect the panel's current users.
-  const typeByReaction = { '📽️': 'streamer', '🎨': 'artist', '🎬': 'satirical_cc', '🎮': 'general_cc' };
-  panelMessage = await channel.messages.fetch(panelMessage.id).catch(() => panelMessage);
-  const refreshedReactions = panelMessage.reactions.cache;
-  if (refreshedReactions.size > 0) {
-    for (const emoji of CONTENT_CREATOR_REACTIONS) {
-      const reaction = refreshedReactions.find(item => item.emoji.name === emoji);
-      if (!reaction) continue;
-      const type = CONTENT_CREATOR_TYPES.find(item => item.key === typeByReaction[emoji]);
-      if (!type) continue;
-      const users = await reaction.users.fetch().catch(() => null);
-      if (!users) continue;
-      for (const user of users.values()) {
-        if (user.bot) continue;
-        try {
-          const member = await panelMessage.guild.members.fetch(user.id);
-          if (!member.roles.cache.has(CONTENT_CREATOR_ROLE_ID)) {
-            await reaction.users.remove(user.id).catch(() => null);
-            continue;
-          }
-          await selectContentCreatorType(member, type);
-        } catch (error) {
-          console.error(`Could not sync ${type.name} reaction for ${user.tag}:`, error.message);
-        }
-      }
-    }
+    try { await panelMessage.react(emoji); }
+    catch (error) { console.error(`Could not add reaction ${emoji}:`, error.message); }
   }
 }
 
@@ -1501,12 +1463,6 @@ async function registerSlashCommands() {
 
 client.on('interactionCreate', async interaction => {
   try {
-    console.log(
-      `📩 Interaction received | Type: ${interaction.type} | ` +
-      `Custom ID: ${interaction.customId || interaction.commandName || 'unknown'} | ` +
-      `User: ${interaction.user?.tag || 'unknown'}`
-    );
-
     // ========================================
     // SLASH COMMANDS
     // ========================================
@@ -1535,15 +1491,14 @@ client.on('interactionCreate', async interaction => {
       // --------------------------------------
 
       if (interaction.commandName === 'reset-selection') {
+        // Acknowledge before role and log API calls can exceed Discord's 3-second limit.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         await clearRoles(member);
         await clearLanes(member);
 
-        await interaction.reply({
-          embeds: [
-            currentSelectionEmbed(member),
-          ],
+        await interaction.editReply({
+          embeds: [currentSelectionEmbed(member)],
           components: currentSelectionButtons(),
-          flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -1770,6 +1725,9 @@ client.on('interactionCreate', async interaction => {
           return;
         }
 
+        // Acknowledge the click before role assignment or logging.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         await member.roles.add(
           GIVEAWAY_ROLE_ID,
           'Giveaway reward claim'
@@ -1788,10 +1746,9 @@ client.on('interactionCreate', async interaction => {
           )
         );
 
-        await interaction.reply({
+        await interaction.editReply({
           content:
             '🎁 **Giveaway role claimed successfully!**\n\nYou now have the **@Giveaways** role and can proceed with your reward claim.\n\n⏰ If your claim is not completed, the role will automatically expire after **24 hours**.',
-          flags: MessageFlags.Ephemeral,
         });
 
         console.log(
@@ -1828,26 +1785,15 @@ client.on('interactionCreate', async interaction => {
           return;
         }
 
-        // Acknowledge the component interaction immediately, so role/log API
-        // calls cannot trigger Discord's "This interaction failed" timeout.
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        let typeAdded = false;
-        let typeError = null;
-        try {
-          typeAdded = await selectContentCreatorType(member, selectedType);
-        } catch (error) {
-          typeError = error;
-          console.error(`Could not grant ${selectedType.name} role:`, error);
-        }
+        const typeAdded = await selectContentCreatorType(member, selectedType);
 
-        await interaction.editReply({
-          content: typeError
-            ? `❌ Could not grant the **\`${selectedType.name}\`** role. Please check the bot's role hierarchy and permissions, then try again.`
-            : typeAdded
-              ? `✅ **\`${selectedType.name}\`** role granted. You may select another type if applicable.`
-              : `ℹ️ You already have the **\`${selectedType.name}\`** role. You can still choose your platforms below.`,
+        await interaction.reply({
+          content: typeAdded
+            ? `✅ **${selectedType.name}** role granted. You may select another type if applicable.`
+            : `ℹ️ You already have the **${selectedType.name}** role. You can still choose your platforms below.`,
           embeds: [contentCreatorPlatformEmbed()],
           components: contentCreatorPlatformButtons(),
+          flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -1862,6 +1808,12 @@ client.on('interactionCreate', async interaction => {
         }
         pendingPlatformSelections.set(interaction.user.id, []);
         await interaction.reply({ content: 'Choose one or more platforms, then press **Done** to grant the selected roles.', embeds: [contentCreatorPlatformEmbed()], components: contentCreatorPlatformButtons(), flags: MessageFlags.Ephemeral });
+        return;
+      }
+
+      if (interaction.isStringSelectMenu() && interaction.customId === 'lampoon_cc_platform_select') {
+        await interaction.deferUpdate();
+        pendingPlatformSelections.set(interaction.user.id, interaction.values);
         return;
       }
 
@@ -2128,13 +2080,6 @@ client.on('interactionCreate', async interaction => {
     // ========================================
 
     if (interaction.isStringSelectMenu()) {
-      // Handle the private Content Creator platform multi-select here (not inside the button branch).
-      if (interaction.customId === 'lampoon_cc_platform_select') {
-        await interaction.deferUpdate();
-        pendingPlatformSelections.set(interaction.user.id, interaction.values);
-        return;
-      }
-
       const member = interaction.member;
 
       // --------------------------------------
@@ -2190,24 +2135,26 @@ client.on('interactionCreate', async interaction => {
     console.error('❌ Interaction error:', error);
 
     try {
+      const response = {
+        content:
+          '❌ Something went wrong while processing your selection. Please try again.',
+        embeds: [],
+        components: [],
+      };
+
       if (interaction.deferred || interaction.replied) {
-        await interaction.editReply({
-          content:
-            '❌ Something went wrong while processing your selection. Please try again.',
-          embeds: [],
-          components: [],
-        });
-      } else {
+        await interaction.editReply(response);
+      } else if (interaction.isRepliable()) {
         await interaction.reply({
-          content:
-            '❌ Something went wrong while processing your selection. Please try again.',
+          ...response,
           flags: MessageFlags.Ephemeral,
         });
       }
     } catch (replyError) {
+      // The interaction may already have expired; do not let this mask the original error.
       console.error(
-        '❌ Could not send error response:',
-        replyError
+        '❌ Could not send interaction error response:',
+        replyError.message || replyError
       );
     }
   }
@@ -2291,22 +2238,23 @@ client.on('messageReactionRemove', async (reaction, user) => {
   }
 });
 
- // ==========================================
- // BOT READY
- // ==========================================
+// ==========================================
+// BOT READY
+// ==========================================
 
 client.once('clientReady', async () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
-  console.log(`🆔 Bot ID: ${client.user.id}`);
+  console.log(`Logged in as ${client.user.tag}`);
 
   try {
     await registerSlashCommands();
     await sendOrFindPanel();
     await setupContentCreatorPanel();
     await setupGiveawayPanel();
-    console.log('✅ All startup tasks completed.');
   } catch (error) {
-    console.error('❌ Startup task error:', error);
+    console.error(
+      '❌ Startup task error:',
+      error
+    );
   }
 });
 
@@ -2314,6 +2262,4 @@ client.once('clientReady', async () => {
 // LOGIN
 // ==========================================
 
-client.login(DISCORD_TOKEN).catch((error) => {
-  console.error('❌ Discord login failed:', error);
-});
+client.login(DISCORD_TOKEN);
