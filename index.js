@@ -2291,23 +2291,22 @@ client.on('messageReactionRemove', async (reaction, user) => {
   }
 });
 
-// ==========================================
-// BOT READY
-// ==========================================
+ // ==========================================
+ // BOT READY
+ // ==========================================
 
 client.once('clientReady', async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  console.log(`✅ Logged in as ${client.user.tag}`);
+  console.log(`🆔 Bot ID: ${client.user.id}`);
 
   try {
     await registerSlashCommands();
     await sendOrFindPanel();
     await setupContentCreatorPanel();
     await setupGiveawayPanel();
+    console.log('✅ All startup tasks completed.');
   } catch (error) {
-    console.error(
-      '❌ Startup task error:',
-      error
-    );
+    console.error('❌ Startup task error:', error);
   }
 });
 
@@ -2315,4 +2314,6 @@ client.once('clientReady', async () => {
 // LOGIN
 // ==========================================
 
-client.login(DISCORD_TOKEN);
+client.login(DISCORD_TOKEN).catch((error) => {
+  console.error('❌ Discord login failed:', error);
+});
