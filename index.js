@@ -18,42 +18,31 @@ const {
   MessageFlags,
 } = require('discord.js');
 
+// ==========================================
+// RENDER HEALTH CHECK
+// ==========================================
 
- // ==========================================
- // RENDER HEALTH CHECK
- // ==========================================
+const PORT = Number(process.env.PORT) || 10000;
 
- const PORT = Number(process.env.PORT) || 10000;
+const server = http.createServer((req, res) => {
+  if (req.url === '/health') {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+    });
 
- const server = http.createServer((req, res) => {
-   if (req.url === '/health') {
-     const connected = client.isReady();
+    return res.end('OK');
+  }
 
-     res.writeHead(connected ? 200 : 503, {
-       'Content-Type': 'application/json; charset=utf-8',
-     });
+  res.writeHead(200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+  });
 
-     return res.end(JSON.stringify({
-       web: 'online',
-       discord: connected ? 'connected' : 'disconnected',
-       bot: client.user?.tag ?? null,
-     }));
-   }
+  res.end('LAMPOON Role & Lane Bot is online.');
+});
 
-   res.writeHead(200, {
-     'Content-Type': 'text/plain; charset=utf-8',
-   });
-
-   res.end(
-     client.isReady()
-       ? 'LAMPOON Role & Lane Bot is connected to Discord.'
-       : 'Web server is online, but the Discord bot is disconnected.'
-   );
- });
-
- server.listen(PORT, '0.0.0.0', () => {
-   console.log(`🌐 Health server running on port ${PORT}`);
- });
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌐 Health server running on port ${PORT}`);
+});
 
 // ==========================================
 // ENVIRONMENT VARIABLES
@@ -1554,12 +1543,15 @@ client.on('interactionCreate', async interaction => {
           return;
         }
 
+        // Acknowledge before network/API operations that may exceed 3 seconds.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const targetMember = await guild.members
           .fetch(targetUser.id)
           .catch(() => null);
 
         if (!targetMember) {
-          await interaction.reply({
+          await interaction.editReply({
             content:
               '❌ I could not find that member in the server.',
             flags: MessageFlags.Ephemeral,
@@ -1581,7 +1573,7 @@ client.on('interactionCreate', async interaction => {
             )
           );
 
-          await interaction.reply({
+          await interaction.editReply({
             content:
               `⚠️ Warning recorded for ${targetMember}.\n\n**Reason:** ${reason}`,
             flags: MessageFlags.Ephemeral,
@@ -1604,7 +1596,7 @@ client.on('interactionCreate', async interaction => {
               GIVEAWAY_ROLE_ID
             )
           ) {
-            await interaction.reply({
+            await interaction.editReply({
               content:
                 `ℹ️ ${targetMember} does not currently have the **@Giveaways** role.`,
               flags: MessageFlags.Ephemeral,
@@ -1630,7 +1622,7 @@ client.on('interactionCreate', async interaction => {
             )
           );
 
-          await interaction.reply({
+          await interaction.editReply({
             content:
               `🗑️ The **@Giveaways** role was removed from ${targetMember}.\n\n**Reason:** ${reason}`,
             flags: MessageFlags.Ephemeral,
@@ -1649,7 +1641,7 @@ client.on('interactionCreate', async interaction => {
 
         if (action === 'timeout') {
           if (!duration) {
-            await interaction.reply({
+            await interaction.editReply({
               content:
                 '❌ You must provide a **duration** when using the Timeout action.',
               flags: MessageFlags.Ephemeral,
@@ -1673,7 +1665,7 @@ client.on('interactionCreate', async interaction => {
             )
           );
 
-          await interaction.reply({
+          await interaction.editReply({
             content:
               `⏱️ ${targetMember} has been timed out for **${duration} minute(s)**.\n\n**Reason:** ${reason}`,
             flags: MessageFlags.Ephemeral,
@@ -1819,12 +1811,6 @@ client.on('interactionCreate', async interaction => {
         }
         pendingPlatformSelections.set(interaction.user.id, []);
         await interaction.reply({ content: 'Choose one or more platforms, then press **Done** to grant the selected roles.', embeds: [contentCreatorPlatformEmbed()], components: contentCreatorPlatformButtons(), flags: MessageFlags.Ephemeral });
-        return;
-      }
-
-      if (interaction.isStringSelectMenu() && interaction.customId === 'lampoon_cc_platform_select') {
-        await interaction.deferUpdate();
-        pendingPlatformSelections.set(interaction.user.id, interaction.values);
         return;
       }
 
@@ -2093,6 +2079,14 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isStringSelectMenu()) {
       const member = interaction.member;
 
+      // Handle the private Content Creator platform menu here, not inside
+      // the button handler, so the select-menu interaction is actually reached.
+      if (interaction.customId === 'lampoon_cc_platform_select') {
+        await interaction.deferUpdate();
+        pendingPlatformSelections.set(interaction.user.id, interaction.values);
+        return;
+      }
+
       // --------------------------------------
       // ROLE SELECT
       // --------------------------------------
@@ -2254,22 +2248,18 @@ client.on('messageReactionRemove', async (reaction, user) => {
 // ==========================================
 
 client.once('clientReady', async () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
+  console.log(`Logged in as ${client.user.tag}`);
 
   try {
     await registerSlashCommands();
-    console.log('✅ Slash commands registered.');
-
     await sendOrFindPanel();
-    console.log('✅ Role & Lane panel ready.');
-
     await setupContentCreatorPanel();
-    console.log('✅ Content Creator panel ready.');
-
     await setupGiveawayPanel();
-    console.log('✅ Giveaway panel ready.');
   } catch (error) {
-    console.error('❌ Startup task error:', error);
+    console.error(
+      '❌ Startup task error:',
+      error
+    );
   }
 });
 
