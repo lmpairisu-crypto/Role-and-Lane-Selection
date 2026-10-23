@@ -18,31 +18,42 @@ const {
   MessageFlags,
 } = require('discord.js');
 
-// ==========================================
-// RENDER HEALTH CHECK
-// ==========================================
 
-const PORT = Number(process.env.PORT) || 10000;
+ // ==========================================
+ // RENDER HEALTH CHECK
+ // ==========================================
 
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, {
-      'Content-Type': 'text/plain; charset=utf-8',
-    });
+ const PORT = Number(process.env.PORT) || 10000;
 
-    return res.end('OK');
-  }
+ const server = http.createServer((req, res) => {
+   if (req.url === '/health') {
+     const connected = client.isReady();
 
-  res.writeHead(200, {
-    'Content-Type': 'text/plain; charset=utf-8',
-  });
+     res.writeHead(connected ? 200 : 503, {
+       'Content-Type': 'application/json; charset=utf-8',
+     });
 
-  res.end('LAMPOON Role & Lane Bot is online.');
-});
+     return res.end(JSON.stringify({
+       web: 'online',
+       discord: connected ? 'connected' : 'disconnected',
+       bot: client.user?.tag ?? null,
+     }));
+   }
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🌐 Health server running on port ${PORT}`);
-});
+   res.writeHead(200, {
+     'Content-Type': 'text/plain; charset=utf-8',
+   });
+
+   res.end(
+     client.isReady()
+       ? 'LAMPOON Role & Lane Bot is connected to Discord.'
+       : 'Web server is online, but the Discord bot is disconnected.'
+   );
+ });
+
+ server.listen(PORT, '0.0.0.0', () => {
+   console.log(`🌐 Health server running on port ${PORT}`);
+ });
 
 // ==========================================
 // ENVIRONMENT VARIABLES
@@ -2243,23 +2254,31 @@ client.on('messageReactionRemove', async (reaction, user) => {
   }
 });
 
-// ==========================================
+
+ // ==========================================
 // BOT READY
 // ==========================================
 
-client.once('clientReady', async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+client.once('ready', async () => {
+  console.log(`✅ Discord login successful: ${client.user.tag}`);
 
   try {
+    console.log('🔄 Registering slash commands...');
     await registerSlashCommands();
+    console.log('✅ Slash commands registered.');
+
+    console.log('🔄 Setting up Role & Lane panel...');
     await sendOrFindPanel();
+
+    console.log('🔄 Setting up Content Creator panel...');
     await setupContentCreatorPanel();
+
+    console.log('🔄 Setting up Giveaway panel...');
     await setupGiveawayPanel();
+
+    console.log('✅ Startup tasks finished.');
   } catch (error) {
-    console.error(
-      '❌ Startup task error:',
-      error
-    );
+    console.error('❌ Startup task failed:', error);
   }
 });
 
@@ -2267,4 +2286,8 @@ client.once('clientReady', async () => {
 // LOGIN
 // ==========================================
 
-client.login(DISCORD_TOKEN);
+console.log('🔄 Attempting Discord login...');
+
+client.login(DISCORD_TOKEN).catch(error => {
+  console.error('❌ Discord login failed:', error);
+});
