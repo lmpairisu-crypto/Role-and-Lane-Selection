@@ -1501,6 +1501,12 @@ async function registerSlashCommands() {
 
 client.on('interactionCreate', async interaction => {
   try {
+    console.log(
+      `📩 Interaction received | Type: ${interaction.type} | ` +
+      `Custom ID: ${interaction.customId || interaction.commandName || 'unknown'} | ` +
+      `User: ${interaction.user?.tag || 'unknown'}`
+    );
+
     // ========================================
     // SLASH COMMANDS
     // ========================================
