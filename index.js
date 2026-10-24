@@ -1879,8 +1879,10 @@ client.on('interactionCreate', async interaction => {
           await interaction.reply({ content: `❌ You need the <@&${CONTENT_CREATOR_ROLE_ID}> role first. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`, flags: MessageFlags.Ephemeral });
           return;
         }
+        // Acknowledge immediately before constructing and sending the private menu.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         pendingPlatformSelections.set(interaction.user.id, []);
-        await interaction.reply({ content: 'Choose one or more platforms, then press **Done** to grant the selected roles.', embeds: [contentCreatorPlatformEmbed()], components: contentCreatorPlatformButtons(), flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ content: 'Choose one or more platforms, then press **Done** to grant the selected roles.', embeds: [contentCreatorPlatformEmbed()], components: contentCreatorPlatformButtons() });
         return;
       }
 
@@ -1971,15 +1973,12 @@ client.on('interactionCreate', async interaction => {
       // --------------------------------------
 
       if (interaction.customId === 'lampoon_role') {
-        await interaction.reply({
+        // Defer first so Discord receives an acknowledgement before menu work.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.editReply({
           embeds: [roleEmbed()],
-          components: [
-            roleMenu(member),
-            ...rolePanelButtons(),
-          ],
-          flags: MessageFlags.Ephemeral,
+          components: [roleMenu(member), ...rolePanelButtons()],
         });
-
         return;
       }
 
@@ -1988,15 +1987,11 @@ client.on('interactionCreate', async interaction => {
       // --------------------------------------
 
       if (interaction.customId === 'lampoon_lane') {
-        await interaction.reply({
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.editReply({
           embeds: [laneEmbed()],
-          components: [
-            laneMenu(member),
-            ...lanePanelButtons(),
-          ],
-          flags: MessageFlags.Ephemeral,
+          components: [laneMenu(member), ...lanePanelButtons()],
         });
-
         return;
       }
 
@@ -2005,14 +2000,11 @@ client.on('interactionCreate', async interaction => {
       // --------------------------------------
 
       if (interaction.customId === 'lampoon_current') {
-        await interaction.reply({
-          embeds: [
-            currentSelectionEmbed(member),
-          ],
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.editReply({
+          embeds: [currentSelectionEmbed(member)],
           components: currentSelectionButtons(),
-          flags: MessageFlags.Ephemeral,
         });
-
         return;
       }
 
@@ -2203,6 +2195,11 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
+      // Never leave an unrecognized select-menu interaction unacknowledged.
+      await interaction.reply({
+        content: '❌ This selection menu is not configured. Please reopen the panel and try again.',
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 
