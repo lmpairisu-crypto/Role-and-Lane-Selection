@@ -20,35 +20,80 @@ const {
 
 
  // ==========================================
- // RENDER HEALTH CHECK
+ // RENDER HEALTH / DIAGNOSTICS
  // ==========================================
 
  const PORT = Number(process.env.PORT) || 10000;
+ const startupState = {
+   startedAt: new Date().toISOString(),
+   readyAt: null,
+   lastDisconnectAt: null,
+   lastDisconnectCode: null,
+   tasks: {
+     slashCommands: 'pending',
+     roleLanePanel: 'pending',
+     contentCreatorPanel: 'pending',
+     giveawayPanel: 'pending',
+   },
+   lastInteractionAt: null,
+   interactionsSeen: 0,
+   interactionErrors: 0,
+   lastInteractionErrorAt: null,
+   lastInteractionError: null,
+};
+
+ function healthSnapshot() {
+   const discordReady = Boolean(client?.isReady?.());
+   const taskValues = Object.values(startupState.tasks);
+   const startupComplete = taskValues.every(value => value === 'ok');
+   const startupFailed = taskValues.some(value => value === 'failed');
+   return {
+     status: discordReady && startupComplete && !startupFailed ? 'healthy' : 'degraded',
+     web: 'online',
+     discord: discordReady ? 'connected' : 'disconnected',
+     bot: client?.user?.tag ?? null,
+     startup: {
+       complete: startupComplete,
+       tasks: startupState.tasks,
+       startedAt: startupState.startedAt,
+       readyAt: startupState.readyAt,
+     },
+     diagnostics: {
+       lastDisconnectAt: startupState.lastDisconnectAt,
+       lastDisconnectCode: startupState.lastDisconnectCode,
+       lastInteractionAt: startupState.lastInteractionAt,
+       interactionsSeen: startupState.interactionsSeen,
+       interactionErrors: startupState.interactionErrors,
+       lastInteractionErrorAt: startupState.lastInteractionErrorAt,
+       lastInteractionError: startupState.lastInteractionError,
+     },
+     uptimeSeconds: Math.floor(process.uptime()),
+     timestamp: new Date().toISOString(),
+   };
+ }
 
  const server = http.createServer((req, res) => {
-   if (req.url === '/health') {
-     const connected = client.isReady();
-
-     res.writeHead(connected ? 200 : 503, {
+   const pathname = new URL(req.url, 'http://localhost').pathname;
+   if (pathname === '/health' || pathname === '/health/ready') {
+     const snapshot = healthSnapshot();
+     // Keep /health HTTP 200 while the web process is alive so Render's
+     // liveness probe does not restart a bot merely during Discord reconnects.
+     // Use /health/ready when a strict readiness status code is desired.
+     const readyEndpoint = pathname === '/health/ready';
+     const isReady = snapshot.status === 'healthy';
+     res.writeHead(readyEndpoint && !isReady ? 503 : 200, {
        'Content-Type': 'application/json; charset=utf-8',
+       'Cache-Control': 'no-store',
      });
-
-     return res.end(JSON.stringify({
-       web: 'online',
-       discord: connected ? 'connected' : 'disconnected',
-       bot: client.user?.tag ?? null,
-     }));
+     return res.end(JSON.stringify(snapshot, null, 2));
    }
 
-   res.writeHead(200, {
-     'Content-Type': 'text/plain; charset=utf-8',
-   });
+   res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+   res.end('LAMPOON Role & Lane Bot health server is online. See /health for diagnostics.');
+ });
 
-   res.end(
-     client.isReady()
-       ? 'LAMPOON Role & Lane Bot is connected to Discord.'
-       : 'Web server is online, but the Discord bot is disconnected.'
-   );
+ server.on('error', error => {
+   console.error('❌ Health HTTP server error:', error);
  });
 
  server.listen(PORT, '0.0.0.0', () => {
@@ -1473,6 +1518,18 @@ async function registerSlashCommands() {
 // ==========================================
 
 client.on('interactionCreate', async interaction => {
+  const interactionStartedAt = Date.now();
+  const interactionKind = interaction.isChatInputCommand()
+    ? `command:${interaction.commandName}`
+    : interaction.isButton()
+      ? `button:${interaction.customId}`
+      : interaction.isStringSelectMenu()
+        ? `select:${interaction.customId}`
+        : `other:${interaction.type}`;
+  startupState.lastInteractionAt = new Date().toISOString();
+  startupState.interactionsSeen += 1;
+  console.log(`📨 Interaction received: ${interactionKind} (id=${interaction.id})`);
+
   try {
     // ========================================
     // SLASH COMMANDS
@@ -1799,15 +1856,17 @@ client.on('interactionCreate', async interaction => {
           return;
         }
 
+        // Role assignment performs Discord API calls; acknowledge within Discord's
+        // 3-second deadline before attempting to grant the role.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const typeAdded = await selectContentCreatorType(member, selectedType);
 
-        await interaction.reply({
+        await interaction.editReply({
           content: typeAdded
             ? `✅ **${selectedType.name}** role granted. You may select another type if applicable.`
             : `ℹ️ You already have the **${selectedType.name}** role. You can still choose your platforms below.`,
           embeds: [contentCreatorPlatformEmbed()],
           components: contentCreatorPlatformButtons(),
-          flags: MessageFlags.Ephemeral,
         });
 
         return;
@@ -2148,7 +2207,10 @@ client.on('interactionCreate', async interaction => {
     }
 
   } catch (error) {
-    console.error('❌ Interaction error:', error);
+    startupState.interactionErrors += 1;
+    startupState.lastInteractionErrorAt = new Date().toISOString();
+    startupState.lastInteractionError = String(error?.code || error?.name || 'Error').slice(0, 80);
+    console.error(`❌ Interaction failed: ${interactionKind} (id=${interaction.id}, elapsedMs=${Date.now() - interactionStartedAt}, acknowledged=${interaction.deferred || interaction.replied})`, error);
 
     try {
       const response = {
@@ -2169,7 +2231,7 @@ client.on('interactionCreate', async interaction => {
     } catch (replyError) {
       // The interaction may already have expired; do not let this mask the original error.
       console.error(
-        '❌ Could not send interaction error response:',
+        `❌ Could not send interaction error response for ${interactionKind} (id=${interaction.id}, code=${replyError?.code || 'unknown'}):`,
         replyError.message || replyError
       );
     }
@@ -2256,29 +2318,66 @@ client.on('messageReactionRemove', async (reaction, user) => {
 
 
  // ==========================================
-// BOT READY
+// DISCORD CONNECTION DIAGNOSTICS
+// ==========================================
+
+client.on('error', error => {
+  console.error('❌ Discord client error:', error);
+});
+
+client.on('shardDisconnect', (event, shardId) => {
+  startupState.lastDisconnectAt = new Date().toISOString();
+  startupState.lastDisconnectCode = event?.code ?? null;
+  console.warn(`⚠️ Discord shard ${shardId} disconnected (code=${event?.code ?? 'unknown'}, clean=${event?.wasClean ?? 'unknown'}).`);
+});
+
+client.on('shardReconnecting', shardId => {
+  console.warn(`🔄 Discord shard ${shardId} reconnecting...`);
+});
+
+client.on('shardResume', (shardId, replayedEvents) => {
+  console.log(`✅ Discord shard ${shardId} resumed; replayedEvents=${replayedEvents}.`);
+});
+
+client.on('warn', message => {
+  console.warn('⚠️ Discord.js warning:', message);
+});
+
+// ==========================================
+// BOT READY / STARTUP TASKS
 // ==========================================
 
 client.once('ready', async () => {
+  startupState.readyAt = new Date().toISOString();
   console.log(`✅ Discord login successful: ${client.user.tag}`);
 
-  try {
-    console.log('🔄 Registering slash commands...');
-    await registerSlashCommands();
-    console.log('✅ Slash commands registered.');
+  const runStartupTask = async (key, label, task) => {
+    startupState.tasks[key] = 'running';
+    console.log(`🔄 Startup task started: ${label}`);
+    try {
+      await task();
+      startupState.tasks[key] = 'ok';
+      console.log(`✅ Startup task completed: ${label}`);
+    } catch (error) {
+      startupState.tasks[key] = 'failed';
+      console.error(`❌ Startup task failed: ${label}`, error);
+    }
+  };
 
-    console.log('🔄 Setting up Role & Lane panel...');
-    await sendOrFindPanel();
+  // Run tasks independently so one panel failure does not prevent later panels
+  // from being refreshed. Health reports each task's status separately.
+  await runStartupTask('slashCommands', 'register slash commands', registerSlashCommands);
+  await runStartupTask('roleLanePanel', 'set up Role & Lane panel', sendOrFindPanel);
+  await runStartupTask('contentCreatorPanel', 'set up Content Creator panel', setupContentCreatorPanel);
+  await runStartupTask('giveawayPanel', 'set up Giveaway panel', setupGiveawayPanel);
 
-    console.log('🔄 Setting up Content Creator panel...');
-    await setupContentCreatorPanel();
-
-    console.log('🔄 Setting up Giveaway panel...');
-    await setupGiveawayPanel();
-
-    console.log('✅ Startup tasks finished.');
-  } catch (error) {
-    console.error('❌ Startup task failed:', error);
+  const failedTasks = Object.entries(startupState.tasks)
+    .filter(([, status]) => status !== 'ok')
+    .map(([name]) => name);
+  if (failedTasks.length) {
+    console.error(`⚠️ Startup finished with failed tasks: ${failedTasks.join(', ')}`);
+  } else {
+    console.log('✅ Startup tasks finished successfully.');
   }
 });
 
@@ -2290,4 +2389,16 @@ console.log('🔄 Attempting Discord login...');
 
 client.login(DISCORD_TOKEN).catch(error => {
   console.error('❌ Discord login failed:', error);
+});
+
+process.on('unhandledRejection', reason => {
+  console.error('❌ Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', error => {
+  // Log before exiting: continuing after an uncaught exception can leave the bot
+  // in an unknown state. Render will restart the process and startup diagnostics
+  // will show which stage was reached.
+  console.error('❌ Uncaught exception; exiting so Render can restart safely:', error);
+  process.exit(1);
 });
