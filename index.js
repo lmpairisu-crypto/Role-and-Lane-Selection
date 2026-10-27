@@ -954,7 +954,10 @@ function contentCreatorPlatformEmbed(_color = 0xC0C0C0, selectedPlatform = null)
     .setDescription(
       `${AVISALA} **Choose your social media platforms privately.**
 
-Choose one or more platforms from the menu below, then press **Done** to receive the selected roles.
+Choose one or more platforms from the menu below.
+
+• Press **Done** to receive the selected platform roles.
+• Press **Remove Role** to remove the selected platform roles if you chose the wrong ones.
 
 <:Tiktok:1542438653094268969> **\`TikTok\`**
 <:Facebook:1542438933244416100> **\`Facebook\`**
@@ -984,7 +987,12 @@ function contentCreatorPlatformButtons() {
         .setCustomId('lampoon_cc_platform_done')
         .setLabel('Done')
         .setEmoji('✅')
-        .setStyle(ButtonStyle.Success)
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId('lampoon_cc_platform_remove')
+        .setLabel('Remove Role')
+        .setEmoji('🗑️')
+        .setStyle(ButtonStyle.Danger)
     ),
   ];
 }
@@ -1898,6 +1906,51 @@ client.on('interactionCreate', async interaction => {
             content:
               `❌ You need the <@&${CONTENT_CREATOR_ROLE_ID}> role before selecting a Content Creator platform. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`,
             flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        if (interaction.customId === 'lampoon_cc_platform_remove') {
+          // Acknowledge immediately before Discord role API calls.
+          await interaction.deferUpdate();
+          const selectedKeys = pendingPlatformSelections.get(interaction.user.id) || [];
+          if (!selectedKeys.length) {
+            await interaction.editReply({
+              content: '⚠️ First choose the platform role(s) you want to remove from the menu above, then press **Remove Role**.',
+              embeds: [contentCreatorPlatformEmbed()],
+              components: contentCreatorPlatformButtons(),
+            });
+            return;
+          }
+
+          const removed = [];
+          const notOwned = [];
+          const failed = [];
+          for (const key of selectedKeys) {
+            const platform = CONTENT_CREATOR_PLATFORMS.find(item => item.key === key);
+            if (!platform) continue;
+            try {
+              if (member.roles.cache.has(platform.roleId)) {
+                await member.roles.remove(platform.roleId, 'Member removed an incorrect Content Creator platform selection');
+                removed.push(platform);
+                await sendContentCreatorLog(member, [], [{ name: platform.name, emoji: platform.emoji }]);
+              } else {
+                notOwned.push(platform.name);
+              }
+            } catch (error) {
+              failed.push(platform.name);
+              console.error(`Could not remove ${platform.name} role:`, error);
+            }
+          }
+          pendingPlatformSelections.delete(interaction.user.id);
+          const messages = [];
+          if (removed.length) messages.push(`🗑️ Removed: ${removed.map(p => `**${p.name}**`).join(', ')}.`);
+          if (notOwned.length) messages.push(`ℹ️ You did not have: ${notOwned.join(', ')}.`);
+          if (failed.length) messages.push(`❌ Could not remove: ${failed.join(', ')}. Check the bot's role hierarchy and permissions.`);
+          await interaction.editReply({
+            content: messages.join('\n') || 'No platform roles were selected for removal.',
+            embeds: [contentCreatorPlatformEmbed()],
+            components: contentCreatorPlatformButtons(),
           });
           return;
         }
