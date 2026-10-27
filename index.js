@@ -2565,7 +2565,7 @@ client.on('warn', message => {
 // BOT READY / STARTUP TASKS
 // ==========================================
 
-client.once('ready', async () => {
+client.once('clientReady', async () => {
   startupState.readyAt = new Date().toISOString();
   console.log(`✅ Discord login successful: ${client.user.tag}`);
 
