@@ -2322,6 +2322,22 @@ client.on('error', error => {
   console.error('❌ Discord client error:', error);
 });
 
+client.on('shardError', (error, shardId) => {
+  console.error(`❌ Discord Gateway shard ${shardId} error:`, error);
+});
+
+client.on('shardReady', shardId => {
+  console.log(`✅ Discord Gateway shard ${shardId} is ready.`);
+});
+
+// Discord.js debug messages help distinguish a Gateway/network stall from an
+// authentication rejection. Avoid logging any token or authorization header.
+client.on('debug', message => {
+  if (/gateway|websocket|identify|heartbeat|connect|close|error/i.test(message)) {
+    console.log('🔎 Discord.js debug:', message);
+  }
+});
+
 client.on('shardDisconnect', (event, shardId) => {
   startupState.lastDisconnectAt = new Date().toISOString();
   startupState.lastDisconnectCode = event?.code ?? null;
@@ -2384,7 +2400,21 @@ client.once('ready', async () => {
 
 console.log('🔄 Attempting Discord login...');
 
-client.login(DISCORD_TOKEN).catch(error => {
+let loginSettled = false;
+const loginWatchdog = setTimeout(() => {
+  if (!loginSettled && !client.isReady()) {
+    console.error('⏱️ Discord login is still pending after 20 seconds. Check the Gateway debug/error messages above; the HTTP health server being online does not mean Discord is connected.');
+  }
+}, 20_000);
+loginWatchdog.unref?.();
+
+client.login(DISCORD_TOKEN).then(() => {
+  loginSettled = true;
+  clearTimeout(loginWatchdog);
+  console.log('✅ Discord login promise resolved.');
+}).catch(error => {
+  loginSettled = true;
+  clearTimeout(loginWatchdog);
   console.error('❌ Discord login failed:', error);
 });
 
