@@ -1,13 +1,19 @@
 {
-  "name": "lampoon-role-lane-bot",
-  "version": "1.0.0",
-  "description": "LAMPOON Role & Lane and Giveaway Bot",
+  "name": "lampoon-reminder-bot",
+  "version": "2.0.0",
+  "private": true,
+  "description": "LAMPOON Honor of Kings community moderation and channel reminder bot",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "check": "node --check index.js"
+  },
+  "engines": {
+    "node": "22.x"
   },
   "dependencies": {
-    "discord.js": "^14.24.2",
-    "dotenv": "^17.2.2"
+    "@google/generative-ai": "^0.21.0",
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.4.7"
   }
 }
