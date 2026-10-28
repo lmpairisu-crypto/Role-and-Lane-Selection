@@ -6,7 +6,9 @@
 - Startup tasks are tracked independently. A failure updating one panel no longer prevents the remaining startup tasks from running.
 - Added Discord client/shard connection logs, interaction receipt logs, interaction duration/acknowledgement error details, and process-level failure logs.
 - The Content Creator type button now defers its ephemeral reply before role assignment API calls, then edits that reply. This addresses a likely source of Discord `Unknown interaction` errors.
-- Existing command definitions, role/lane selection logic, giveaway expiration logic, and panel builders are preserved.
+- Role, lane, and Content Creator role changes now share one silver `Avisala ROLE SELECTION LOG` per member ID, with an avatar thumbnail and recent-change history. Existing duplicate role logs are cleaned during startup recovery.
+- Giveaway claim history uses only one editable `🎁 GIVEAWAY CLAIM TRACKER` per member ID. Separate `🎁 GIVEAWAY LOG` action embeds are no longer created; old duplicate giveaway action logs are cleaned during startup recovery.
+- Both log types now use Discord channel ID `1540923700336009226`. Ensure the bot has View Channel, Read Message History, Send Messages, Embed Links, Manage Roles, and role hierarchy access there.
 
 ## Deploy
 1. Replace the project files in your existing Render-connected repository with these files and commit/push, or use the ZIP in your normal repository workflow.
