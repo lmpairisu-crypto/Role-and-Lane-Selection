@@ -137,7 +137,6 @@ const {
 // ==========================================
 
 const AVISALA = '<a:Avisala:1542448826265243660>';
-// All role-selection and giveaway tracker logs use this single channel.
 const AUDIT_LOG_CHANNEL_ID = '1540923700336009226';
 
 const GIVEAWAY_ROLE_ID = '1546589750549418044';
@@ -556,20 +555,6 @@ function currentSelectionButtons() {
 
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId('lampoon_clear_roles')
-        .setLabel('Clear Roles')
-        .setEmoji('🗑️')
-        .setStyle(ButtonStyle.Danger),
-
-      new ButtonBuilder()
-        .setCustomId('lampoon_clear_lanes')
-        .setLabel('Clear Lanes')
-        .setEmoji('🗑️')
-        .setStyle(ButtonStyle.Danger)
-    ),
-
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
         .setCustomId('lampoon_close')
         .setLabel('Close')
         .setEmoji('✖️')
@@ -587,68 +572,276 @@ function roleLogEmbed(member, added, removed, history = []) {
   const changes = [];
   if (added.length) changes.push(`➕ Added: ${added.map(item => `**${item.name}**`).join(', ')}`);
   if (removed.length) changes.push(`➖ Removed: ${removed.map(item => `**${item.name}**`).join(', ')}`);
-  const latest = changes.length ? `${now.toISOString()} — ${changes.join(' | ')}` : `${now.toISOString()} — Role selection updated.`;
+  const latest = `${now.toISOString()} — ${changes.length ? changes.join(' | ') : 'Selection updated.'}`;
   const recent = [latest, ...history].slice(0, 8).join('\n').slice(0, 1024);
-
   const embed = new EmbedBuilder()
     .setColor(0xC0C0C0)
     .setTitle(`${AVISALA} ROLE SELECTION LOG`)
-    .setDescription('Latest role changes for this member. This message is updated instead of posting duplicate logs.')
+    .setDescription('Unified role and lane history. This log is edited for each member to prevent duplicate messages.')
     .setThumbnail(member.user.displayAvatarURL({ size: 256 }))
     .addFields(
       { name: '👤 Member', value: `${member}`, inline: true },
       { name: '🆔 Member ID', value: member.id, inline: true },
       { name: '🕒 Last Updated', value: `<t:${Math.floor(now.getTime() / 1000)}:F>`, inline: false },
     );
-
   if (added.length) embed.addFields({ name: '➕ Added', value: added.map(item => `**${item.name}**`).join('\n').slice(0, 1024), inline: false });
   if (removed.length) embed.addFields({ name: '➖ Removed', value: removed.map(item => `**${item.name}**`).join('\n').slice(0, 1024), inline: false });
   if (!added.length && !removed.length) embed.addFields({ name: 'ℹ️ Changes', value: '`No role changes`', inline: false });
   embed.addFields({ name: '🧾 Recent Changes', value: recent || 'No changes recorded yet.', inline: false });
-  embed.setTimestamp(now);
+  embed.setTimestamp(now).setFooter({ text: 'LAMPOON • Role & Lane Audit' });
   return embed;
 }
 
 async function upsertRoleLog(member, added, removed) {
-  if (!member?.guild || (!added.length && !removed.length)) return;
   const logChannel = await client.channels.fetch(AUDIT_LOG_CHANNEL_ID).catch(() => null);
   if (!logChannel?.isTextBased() || !logChannel.messages) {
-    console.error('❌ Shared audit log channel is unavailable.');
-    return;
+    console.error(`❌ Shared audit log channel ${AUDIT_LOG_CHANNEL_ID} is unavailable.`);
+    return null;
   }
-
-  const recentMessages = await logChannel.messages.fetch({ limit: 100 }).catch(() => null);
-  const matching = [];
-  for (const message of (recentMessages?.values() || [])) {
-    if (message.author?.id !== client.user.id) continue;
-    const existing = message.embeds.find(embed => embed.title?.includes('ROLE SELECTION LOG'));
-    if (!existing) continue;
-    const fields = new Map((existing.fields || []).map(field => [field.name, field.value]));
-    if ((fields.get('🆔 Member ID') || '').replace(/`/g, '').trim() === member.id || (fields.get('👤 Member') || '').includes(`<@${member.id}>`)) {
-      matching.push({ message, embed: existing, fields });
-    }
+  const messages = await logChannel.messages.fetch({ limit: 100 }).catch(() => null);
+  if (!messages) {
+    console.error('❌ Could not read shared audit log channel; check View Channel and Read Message History permissions.');
+    return null;
   }
-
-  matching.sort((a, b) => b.message.createdTimestamp - a.message.createdTimestamp);
-  const previous = matching[0];
-  const history = [];
-  if (previous) {
-    const oldHistory = previous.fields.get('🧾 Recent Changes');
-    if (oldHistory) history.push(...oldHistory.split('\n'));
-    for (const duplicate of matching.slice(1)) {
-      await duplicate.message.delete().catch(() => {});
-    }
-  }
-
-  const embed = roleLogEmbed(member, added, removed, history);
-  if (previous) {
-    // Editing preserves one durable log per member ID (Discord does not move edited messages to the bottom).
-    await previous.message.edit({ embeds: [embed] }).catch(async error => {
-      console.error('Could not edit role selection log:', error.message);
-      await logChannel.send({ embeds: [embed] }).catch(() => null);
+  const memberLogs = [...messages.values()].filter(message => {
+    if (message.author.id !== client.user.id || !message.embeds.length) return false;
+    const embed = message.embeds.find(item => /ROLE SELECTION LOG|LANE SELECTION LOG|Content Creator Type Role/.test(item.title || ''));
+    if (!embed) return false;
+    return (embed.fields || []).some(field => field.name === '🆔 Member ID' && field.value === member.id)
+      || (embed.fields || []).some(field => field.name === '👤 Member' && field.value.includes(member.id));
+  }).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+  const existing = memberLogs[0];
+  const oldEmbed = existing?.embeds?.[0];
+  const oldHistory = (oldEmbed?.fields || []).find(field => field.name === '🧾 Recent Changes')?.value
+    ?.split('\n').filter(Boolean) || [];
+  const embed = roleLogEmbed(member, added, removed, oldHistory);
+  let saved;
+  if (existing) {
+    saved = await existing.edit({ embeds: [embed] }).catch(error => {
+      console.error('Could not edit member role log:', error.message);
+      return null;
     });
+    // Clean up duplicate logs for this member when they next change a role.
+    for (const duplicate of memberLogs.slice(1)) {
+      await duplicate.delete().catch(() => {});
+    }
   } else {
-    await logChannel.send({ embeds: [embed] }).catch(error => console.error('Could not create role selection log:', error.message));
+    saved = await logChannel.send({ embeds: [embed] }).catch(error => {
+      console.error('Could not create member role log:', error.message);
+      return null;
+    });
+  }
+  return saved;
+}
+
+// ==========================================
+// UPDATE ROLE SELECTION
+// ==========================================
+
+async function updateRoleSelection(member, values) {
+  const selectedKeys = new Set(values);
+
+  const current = getSelectedItems(member, ROLES);
+
+  const added = [];
+  const removed = [];
+
+  for (const role of ROLES) {
+    const roleId = getRoleId(role);
+
+    if (!roleId) continue;
+
+    const hasRole = member.roles.cache.has(roleId);
+    const shouldHaveRole = selectedKeys.has(role.key);
+
+    if (shouldHaveRole && !hasRole) {
+      await member.roles.add(roleId);
+      added.push(role);
+    }
+
+    if (!shouldHaveRole && hasRole) {
+      await member.roles.remove(roleId);
+      removed.push(role);
+    }
+  }
+
+  if (added.length || removed.length) {
+    await upsertRoleLog(member, added, removed);
+  }
+
+  return {
+    current,
+    added,
+    removed,
+  };
+}
+
+// ==========================================
+// UPDATE LANE SELECTION
+// ==========================================
+
+async function updateLaneSelection(member, values) {
+  const selectedKeys = new Set(values);
+
+  const current = getSelectedItems(member, LANES);
+
+  const added = [];
+  const removed = [];
+
+  for (const lane of LANES) {
+    const roleId = getRoleId(lane);
+
+    if (!roleId) continue;
+
+    const hasRole = member.roles.cache.has(roleId);
+    const shouldHaveRole = selectedKeys.has(lane.key);
+
+    if (shouldHaveRole && !hasRole) {
+      await member.roles.add(roleId);
+      added.push(lane);
+    }
+
+    if (!shouldHaveRole && hasRole) {
+      await member.roles.remove(roleId);
+      removed.push(lane);
+    }
+  }
+
+  if (added.length || removed.length) {
+    await upsertRoleLog(member, added, removed);
+  }
+
+  return {
+    current,
+    added,
+    removed,
+  };
+}
+
+// ==========================================
+// CLEAR ROLE SELECTION
+// ==========================================
+
+async function clearRoles(member) {
+  const selected = getSelectedItems(member, ROLES);
+
+  for (const role of selected) {
+    const roleId = getRoleId(role);
+
+    if (!roleId) continue;
+
+    await member.roles.remove(roleId);
+  }
+
+  if (selected.length) {
+    await upsertRoleLog(member, [], selected);
+  }
+
+  return selected;
+}
+
+// ==========================================
+// CLEAR LANE SELECTION
+// ==========================================
+
+async function clearLanes(member) {
+  const selected = getSelectedItems(member, LANES);
+
+  for (const lane of selected) {
+    const roleId = getRoleId(lane);
+
+    if (!roleId) continue;
+
+    await member.roles.remove(roleId);
+  }
+
+  if (selected.length) {
+    await upsertRoleLog(member, [], selected);
+  }
+
+  return selected;
+}
+
+
+// ==========================================
+// CONTENT CREATOR TYPE & PLATFORM SELECTION
+// ==========================================
+
+const CONTENT_CREATOR_ROLE_ID = '1537899709686087781';
+const CONTENT_CREATOR_HELP_CHANNEL_ID = '1538957346729103480';
+
+const CONTENT_CREATOR_TYPES = [
+  {
+    key: 'artist',
+    name: 'Artist',
+    emoji: '🎨',
+    roleId: '1538257357212094554',
+  },
+  {
+    key: 'streamer',
+    name: 'Streamer',
+    emoji: '📽️',
+    roleId: '1538257196599607387',
+  },
+  {
+    key: 'general_cc',
+    name: 'General CC',
+    emoji: '🎮',
+    roleId: '1537897642380492820',
+  },
+  {
+    key: 'satirical_cc',
+    name: 'Satirical CC',
+    emoji: '🎬',
+    roleId: '1537897725968908470',
+  },
+];
+
+const CONTENT_CREATOR_PLATFORMS = [
+  {
+    key: 'tiktok',
+    name: 'TikTok',
+    emoji: '<:Tiktok:1542438653094268969>',
+    roleId: '1540023447785177218',
+    color: 0x000000,
+  },
+  {
+    key: 'facebook',
+    name: 'Facebook',
+    emoji: '<:Facebook:1542438933244416100>',
+    roleId: '1562680703114551306',
+    color: 0x1877F2,
+  },
+  {
+    key: 'youtube',
+    name: 'YouTube',
+    emoji: '<:YouTube:1562770729471316051>',
+    roleId: '1562680791828402308',
+    color: 0xFF0000,
+  },
+  {
+    key: 'twitch',
+    name: 'Twitch',
+    emoji: '<:Twitch:1562770473153073254>',
+    roleId: '1562680863991402556',
+    color: 0x9146FF,
+  },
+];
+
+const CONTENT_CREATOR_REACTIONS = ['📽️', '🎨', '🎬', '🎮'];
+const pendingPlatformSelections = new Map();
+
+// Always verify eligibility against a freshly fetched GuildMember before granting
+// Content Creator type or platform roles. This prevents stale interaction caches
+// or a direct/old component interaction from bypassing the approved-role gate.
+async function fetchApprovedContentCreatorMember(guild, userId) {
+  if (!guild || !userId) return null;
+  try {
+    const member = await guild.members.fetch({ user: userId, force: true });
+    return member.roles.cache.has(CONTENT_CREATOR_ROLE_ID) ? member : null;
+  } catch (error) {
+    console.error('Could not verify approved Content Creator role:', error.message);
+    return null; // Fail closed: never grant roles if approval cannot be verified.
   }
 }
 
@@ -742,7 +935,6 @@ function contentCreatorPlatformButtons() {
 
 async function sendContentCreatorLog(member, added, removed) {
   if (!added.length && !removed.length) return;
-
   await upsertRoleLog(member, added, removed);
 }
 
@@ -884,6 +1076,47 @@ async function sendOrFindPanel() {
 }
 
 // ==========================================
+// GIVEAWAY LOG HELPER
+// ==========================================
+
+async function sendGiveawayLog(_embed) {
+  // Intentionally disabled: the single editable GIVEAWAY CLAIM TRACKER is the only giveaway log.
+  return null;
+}
+
+// ==========================================
+// GIVEAWAY LOG EMBED
+// ==========================================
+
+function giveawayLogEmbed(member, action, reason = '—') {
+  return new EmbedBuilder()
+    .setColor(0xC0C0C0)
+    .setTitle('🎁 GIVEAWAY LOG')
+    .setThumbnail(member.user.displayAvatarURL())
+    .addFields(
+      {
+        name: '👤 Member',
+        value: `${member}\n\`${member.user.tag}\``,
+        inline: false,
+      },
+      {
+        name: '📌 Action',
+        value: action,
+        inline: false,
+      },
+      {
+        name: '📝 Reason',
+        value: reason || '—',
+        inline: false,
+      }
+    )
+    .setTimestamp()
+    .setFooter({
+      text: 'LAMPOON • Giveaway Logs',
+    });
+}
+
+// ==========================================
 // DURABLE GIVEAWAY CLAIM TRACKER
 // The Discord log message itself stores the deadline/status so Render restarts
 // do not erase pending expirations (unlike setTimeout-only storage).
@@ -902,7 +1135,7 @@ function giveawayTrackerEmbed(record, member = null) {
   const embed = new EmbedBuilder()
     .setColor(colorByStatus[record.status] || 0xC0C0C0)
     .setTitle(GIVEAWAY_TRACKER_TITLE)
-    .setDescription(`Persistent status record for a temporary <@&${GIVEAWAY_ROLE_ID}> role claim.`)
+    .setDescription('Persistent status record for a temporary @Giveaways role claim.')
     .addFields(
       { name: '👤 Member', value: `<@${record.memberId}>`, inline: true },
       { name: '🆔 Member ID', value: record.memberId, inline: true },
@@ -921,7 +1154,7 @@ function giveawayTrackerEmbed(record, member = null) {
 
 async function saveGiveawayClaimRecord(record, member = null) {
   if (!AUDIT_LOG_CHANNEL_ID) {
-    console.error('❌ Shared audit log channel is not configured; giveaway claim persistence cannot be saved.');
+    console.error('❌ AUDIT_LOG_CHANNEL_ID is not configured; giveaway claim persistence cannot be saved.');
     return false;
   }
   const channel = await client.channels.fetch(AUDIT_LOG_CHANNEL_ID).catch(() => null);
@@ -966,6 +1199,7 @@ async function expireGiveawayClaim(memberId) {
     const member = guild ? await guild.members.fetch(memberId).catch(() => null) : null;
     if (member?.roles.cache.has(GIVEAWAY_ROLE_ID)) {
       await member.roles.remove(GIVEAWAY_ROLE_ID, 'Giveaway claim expired after 24 hours without a Tickety ticket');
+      await sendGiveawayLog(giveawayLogEmbed(member, '⏰ Giveaway Role Expired', `The role was removed because no Tickety ticket was detected within 24 hours. Expired at: ${new Date().toISOString()}`));
     }
     await updateGiveawayClaimStatus(record, 'EXPIRED', 'No Tickety ticket was detected within 24 hours; the Giveaway role was removed.', member);
   } catch (error) {
@@ -989,7 +1223,7 @@ function scheduleGiveawayRoleExpiration(memberId) {
 
 async function recoverGiveawayClaimTrackers() {
   if (!AUDIT_LOG_CHANNEL_ID) {
-    console.warn('⚠️ Shared audit log channel is not configured; persistent expiration recovery is unavailable.');
+    console.warn('⚠️ AUDIT_LOG_CHANNEL_ID is not configured; persistent expiration recovery is unavailable.');
     return;
   }
   const channel = await client.channels.fetch(AUDIT_LOG_CHANNEL_ID).catch(() => null);
@@ -1007,30 +1241,20 @@ async function recoverGiveawayClaimTrackers() {
     const batch = await channel.messages.fetch({ limit: 100, ...(before ? { before } : {}) }).catch(() => null);
     if (!batch?.size) break;
     for (const message of batch.values()) {
-      if (message.author?.id === client.user.id) {
-        const legacyTitle = message.embeds.find(item => [
-          '🎁 GIVEAWAY LOG',
-          'Content Creator Type Role Selection',
-          'Content Creator Type Role Removed',
-        ].includes(item.title));
-        if (legacyTitle) {
-          await message.delete().catch(() => {});
-          continue;
-        }
-        const roleLog = message.embeds.find(item => item.title?.includes('ROLE SELECTION LOG'));
-        if (roleLog) {
-          const roleFields = new Map((roleLog.fields || []).map(field => [field.name, field.value]));
-          const roleMemberId = (roleFields.get('🆔 Member ID') || '').replace(/`/g, '').trim()
-            || ((roleFields.get('👤 Member') || '').match(/<@!?(\d+)>/) || [])[1];
-          if (roleMemberId) {
-            const roleStamp = new Date(roleLog.timestamp || message.createdAt).getTime();
-            const priorRoleLog = latestRoleLogByMember.get(roleMemberId);
-            if (!priorRoleLog || roleStamp > priorRoleLog.stamp) {
-              if (priorRoleLog?.messageId) duplicateRoleLogMessageIds.push(priorRoleLog.messageId);
-              latestRoleLogByMember.set(roleMemberId, { stamp: roleStamp, messageId: message.id });
-            } else {
-              duplicateRoleLogMessageIds.push(message.id);
-            }
+      const roleEmbed = message.embeds.find(item => /ROLE SELECTION LOG|LANE SELECTION LOG|Content Creator Type Role/.test(item.title || ''));
+      if (message.author.id === client.user.id && roleEmbed) {
+        const roleFields = roleEmbed.fields || [];
+        const idField = roleFields.find(field => field.name === '🆔 Member ID');
+        const memberField = roleFields.find(field => field.name === '👤 Member');
+        const memberId = idField?.value || ((memberField?.value || roleEmbed.description || '').match(/<@!?([0-9]{15,})>/) || [])[1];
+        if (memberId) {
+          const stamp = new Date(message.editedTimestamp || message.createdTimestamp).getTime();
+          const prior = latestRoleLogByMember.get(memberId);
+          if (!prior || stamp > prior.stamp) {
+            if (prior) duplicateRoleLogMessageIds.push(prior.messageId);
+            latestRoleLogByMember.set(memberId, { stamp, messageId: message.id });
+          } else {
+            duplicateRoleLogMessageIds.push(message.id);
           }
         }
       }
@@ -1046,11 +1270,10 @@ async function recoverGiveawayClaimTrackers() {
       const prior = latestByMember.get(memberId);
       const stamp = new Date(embed.timestamp || message.createdAt).getTime();
       if (!prior || stamp > prior.stamp) {
-        if (prior?.messageId) duplicateTrackerMessageIds.push(prior.messageId);
+        if (prior?.record?.logMessageId) duplicateTrackerMessageIds.push(prior.record.logMessageId);
         const claimedUnix = Number((claimedRaw.match(/<t:(\d+):/) || [])[1]);
         latestByMember.set(memberId, {
           stamp,
-          messageId: message.id,
           record: {
             memberId, status,
             claimedAt: Number.isFinite(claimedUnix) && claimedUnix ? new Date(claimedUnix * 1000).toISOString() : message.createdAt.toISOString(),
@@ -1067,15 +1290,19 @@ async function recoverGiveawayClaimTrackers() {
     before = batch.last().id;
     if (batch.size < 100) break;
   }
-  for (const messageId of [...duplicateTrackerMessageIds, ...duplicateRoleLogMessageIds]) {
+  for (const messageId of new Set(duplicateTrackerMessageIds)) {
     const duplicate = await channel.messages.fetch(messageId).catch(() => null);
-    if (duplicate) await duplicate.delete().catch(() => {});
+    if (duplicate) await duplicate.delete().catch(error => console.error(`Could not remove duplicate giveaway tracker ${messageId}:`, error.message));
+  }
+  for (const messageId of new Set(duplicateRoleLogMessageIds)) {
+    const duplicate = await channel.messages.fetch(messageId).catch(() => null);
+    if (duplicate) await duplicate.delete().catch(error => console.error(`Could not remove duplicate role log ${messageId}:`, error.message));
   }
   for (const { record } of latestByMember.values()) {
     giveawayClaims.set(record.memberId, record);
     if (record.status === 'ACTIVE') scheduleGiveawayRoleExpiration(record.memberId);
   }
-  console.log(`♻️ Recovered ${giveawayClaims.size} persistent giveaway claim tracker(s); cleaned ${duplicateTrackerMessageIds.length} duplicate tracker(s) and ${duplicateRoleLogMessageIds.length} duplicate role log(s).`);
+  console.log(`♻️ Recovered ${giveawayClaims.size} persistent giveaway claim tracker(s); cleaned ${new Set(duplicateTrackerMessageIds).size} duplicate tracker(s) and ${new Set(duplicateRoleLogMessageIds).size} duplicate role log(s).`);
 }
 
 async function detectTicketyTicketCreated(channel) {
@@ -1086,6 +1313,7 @@ async function detectTicketyTicketCreated(channel) {
     record.ticketChannelId = channel.id;
     const member = await channel.guild.members.fetch(record.memberId).catch(() => null);
     await updateGiveawayClaimStatus(record, 'TICKET OPEN', 'Tickety ticket channel detected; the 24-hour no-ticket expiry has been cancelled. The Giveaway role will be removed when this ticket channel closes.', member);
+    if (member) await sendGiveawayLog(giveawayLogEmbed(member, '🎟️ Giveaway Ticket Opened', `Tickety ticket channel detected: <#${channel.id}>. The 24-hour no-ticket expiry was cancelled.`));
   }
 }
 
@@ -1102,6 +1330,7 @@ async function detectTicketyTicketClosed(channel) {
       await member.roles.remove(GIVEAWAY_ROLE_ID, 'Tickety giveaway ticket closed');
     }
     await updateGiveawayClaimStatus(record, 'CLOSED', `Tickety ticket channel ${channel.name || channel.id} closed/deleted; Giveaway role removed.`, member);
+    if (member) await sendGiveawayLog(giveawayLogEmbed(member, '🔒 Giveaway Role Removed — Ticket Closed', `Tickety ticket channel ${channel.name || channel.id} closed. The Giveaway role was removed. Closed at: ${new Date().toISOString()}`));
   }
 }
 
@@ -1468,6 +1697,14 @@ client.on('interactionCreate', async interaction => {
         // ------------------------------------
 
         if (action === 'warning') {
+          await sendGiveawayLog(
+            giveawayLogEmbed(
+              targetMember,
+              '⚠️ Staff Warning',
+              reason
+            )
+          );
+
           await interaction.editReply({
             content:
               `⚠️ Warning recorded for ${targetMember}.\n\n**Reason:** ${reason}`,
@@ -1509,6 +1746,14 @@ client.on('interactionCreate', async interaction => {
             targetMember.id
           );
 
+          await sendGiveawayLog(
+            giveawayLogEmbed(
+              targetMember,
+              '🗑️ Giveaway Role Removed',
+              reason
+            )
+          );
+
           await interaction.editReply({
             content:
               `🗑️ The **@Giveaways** role was removed from ${targetMember}.\n\n**Reason:** ${reason}`,
@@ -1544,6 +1789,14 @@ client.on('interactionCreate', async interaction => {
             `Giveaway staff action: ${reason}`
           );
 
+          await sendGiveawayLog(
+            giveawayLogEmbed(
+              targetMember,
+              `⏱️ Timeout — ${duration} minute(s)`,
+              reason
+            )
+          );
+
           await interaction.editReply({
             content:
               `⏱️ ${targetMember} has been timed out for **${duration} minute(s)**.\n\n**Reason:** ${reason}`,
@@ -1574,72 +1827,52 @@ client.on('interactionCreate', async interaction => {
       // --------------------------------------
 
       if (interaction.customId === 'claim_giveaways') {
-
         if (interaction.channelId !== GIVEAWAY_CHANNEL_ID) {
-          await interaction.reply({
-            content:
-              '❌ The Giveaway role can only be claimed in the designated giveaway channel.',
-            flags: MessageFlags.Ephemeral,
-          });
-
+          await interaction.reply({ content: '❌ The Giveaway role can only be claimed in the designated giveaway channel.', flags: MessageFlags.Ephemeral });
           return;
         }
-
-        const member = interaction.member;
-
-        if (!member) {
-          await interaction.reply({
-            content:
-              '❌ I could not find your server membership.',
-            flags: MessageFlags.Ephemeral,
-          });
-
-          return;
-        }
-
-        if (member.roles.cache.has(GIVEAWAY_ROLE_ID)) {
-          await interaction.reply({
-            content:
-              '🎁 You already have the **@Giveaways** role. You can proceed with your reward claim.',
-            flags: MessageFlags.Ephemeral,
-          });
-
-          return;
-        }
-
-        // Acknowledge the click before role assignment or logging.
+        // Acknowledge immediately so Discord's 3-second interaction deadline is never missed.
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-        await member.roles.add(
-          GIVEAWAY_ROLE_ID,
-          'Giveaway reward claim'
-        );
-
-        // Persist exact claim and expiration timestamps in the separate Giveaway Log.
+        const guild = interaction.guild;
+        const member = guild ? await guild.members.fetch({ user: interaction.user.id, force: true }).catch(() => null) : null;
+        if (!member) {
+          await interaction.editReply({ content: '❌ I could not fetch your server membership. Please try again.' });
+          return;
+        }
+        let record = giveawayClaims.get(member.id);
+        const hasRole = member.roles.cache.has(GIVEAWAY_ROLE_ID);
+        if (hasRole && record && ['ACTIVE', 'TICKET OPEN'].includes(record.status)) {
+          if (record.status === 'TICKET OPEN') {
+            await interaction.editReply({ content: `🎁 You already have the **@Giveaways** role and your ticket is detected. Please finish your Tickety ticket; the role will be removed when it closes.` });
+          } else {
+            const expiryUnix = Math.floor(new Date(record.expiresAt).getTime() / 1000);
+            await interaction.editReply({ content: `🎁 You already have the **@Giveaways** role. Please create your Tickety ticket before <t:${expiryUnix}:R> (<t:${expiryUnix}:F>). If no ticket is detected before then, the role will expire automatically.` });
+          }
+          return;
+        }
+        // If the role predates persistent tracking, start a durable 24-hour deadline now.
+        // Its original claim time cannot be recovered from Discord's role state alone.
         const claimedAt = new Date();
-        const priorClaim = giveawayClaims.get(member.id);
-        const record = {
+        if (!hasRole) {
+          await member.roles.add(GIVEAWAY_ROLE_ID, 'Giveaway reward claim');
+        }
+        record = {
           memberId: member.id,
           claimedAt: claimedAt.toISOString(),
           expiresAt: new Date(claimedAt.getTime() + GIVEAWAY_ROLE_EXPIRATION_MS).toISOString(),
           status: 'ACTIVE',
           ticketChannelId: null,
-          note: 'Role claimed; waiting for Tickety ticket creation. Expires in 24 hours if no ticket is detected.',
-          logMessageId: priorClaim?.logMessageId || null,
+          note: hasRole
+            ? 'Existing Giveaway role found without a recoverable tracker. Tracking starts now; create a Tickety ticket within 24 hours.'
+            : 'Role claimed; waiting for Tickety ticket creation. Expires in 24 hours if no ticket is detected.',
+          logMessageId: record?.logMessageId || null,
         };
         giveawayClaims.set(member.id, record);
-        await saveGiveawayClaimRecord(record, member);
+        const saved = await saveGiveawayClaimRecord(record, member);
         scheduleGiveawayRoleExpiration(member.id);
-
-        await interaction.editReply({
-          content:
-            '🎁 **Giveaway role claimed successfully!**\n\nCreate your Tickety giveaway ticket to keep the claim active. If no ticket is detected within **24 hours**, the role will expire automatically. When your ticket closes, the Giveaway role will be removed.',
-        });
-
-        console.log(
-          `🎁 ${member.user.tag} claimed the Giveaway role.`
-        );
-
+        if (!saved) console.error(`❌ Giveaway tracker was not saved for member ${member.id}. Check channel ${AUDIT_LOG_CHANNEL_ID} permissions.`);
+        const expiryUnix = Math.floor(new Date(record.expiresAt).getTime() / 1000);
+        await interaction.editReply({ content: `${hasRole ? '🎁 Your existing Giveaway role is now being tracked.' : '🎁 **Giveaway role claimed successfully!**'}\n\nCreate your Tickety ticket before <t:${expiryUnix}:R> (<t:${expiryUnix}:F>). If no ticket is detected within **24 hours**, the role will be removed automatically. When your ticket closes, the role will be removed.` });
         return;
       }
 
@@ -1648,13 +1881,12 @@ client.on('interactionCreate', async interaction => {
       // --------------------------------------
 
       if (interaction.customId.startsWith('lampoon_cc_type_')) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const member = await fetchApprovedContentCreatorMember(interaction.guild, interaction.user.id);
 
         if (!member) {
-          await interaction.reply({
-            content:
-              `❌ You must already have the approved/verified <@&${CONTENT_CREATOR_ROLE_ID}> role before selecting a Content Creator type. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`,
-            flags: MessageFlags.Ephemeral,
+          await interaction.editReply({
+            content: `❌ You must already have the approved/verified <@&${CONTENT_CREATOR_ROLE_ID}> role before selecting a Content Creator type. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`,
           });
           return;
         }
@@ -1663,16 +1895,10 @@ client.on('interactionCreate', async interaction => {
         const selectedType = CONTENT_CREATOR_TYPES.find(type => type.key === typeKey);
 
         if (!selectedType) {
-          await interaction.reply({
-            content: '❌ This Content Creator type is not configured.',
-            flags: MessageFlags.Ephemeral,
-          });
+          await interaction.editReply({ content: '❌ This Content Creator type is not configured.' });
           return;
         }
 
-        // Role assignment performs Discord API calls; acknowledge within Discord's
-        // 3-second deadline before attempting to grant the role.
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const typeAdded = await selectContentCreatorType(member, selectedType);
 
         await interaction.editReply({
@@ -1688,13 +1914,13 @@ client.on('interactionCreate', async interaction => {
 
       // Open ephemeral multi-select platform menu. Discord reaction events cannot themselves create ephemeral replies.
       if (interaction.customId === 'lampoon_cc_open_platforms') {
+        // Acknowledge before fetching the member so Discord does not expire the interaction.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const member = await fetchApprovedContentCreatorMember(interaction.guild, interaction.user.id);
         if (!member) {
-          await interaction.reply({ content: `❌ You must already have the approved/verified <@&${CONTENT_CREATOR_ROLE_ID}> role first. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.`, flags: MessageFlags.Ephemeral });
+          await interaction.editReply({ content: `❌ You must already have the approved/verified <@&${CONTENT_CREATOR_ROLE_ID}> role first. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}>.` });
           return;
         }
-        // Acknowledge immediately before constructing and sending the private menu.
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         pendingPlatformSelections.set(interaction.user.id, []);
         await interaction.editReply({ content: 'Choose one or more platforms, then press **Done** to grant the selected roles.', embeds: [contentCreatorPlatformEmbed()], components: contentCreatorPlatformButtons() });
         return;
@@ -2120,11 +2346,11 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
     const member = await fetchApprovedContentCreatorMember(message.guild, user.id);
     if (!member) {
-      // Required behavior: remove only this member's reaction. Never DM,
-      // reply publicly, or attempt an ephemeral response from a raw reaction.
+      // Remove the ineligible reaction and privately direct the member to the approval channel.
       await reaction.users.remove(user.id).catch(error => {
         console.error('Could not remove reaction from member without Content Creator role:', error.message);
       });
+      await user.send(`You need the approved Content Creator role before choosing a creator type. Please visit <#${CONTENT_CREATOR_HELP_CHANNEL_ID}> to claim/request that role, then return to the Content Creator Selection panel.`).catch(() => {});
       return;
     }
 

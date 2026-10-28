@@ -1,29 +1,23 @@
 # Render deployment notes — LAMPOON Role & Lane Bot
 
-## What changed
-- `/health` now returns structured diagnostics while keeping HTTP 200 when the web process is alive. This avoids treating a temporary Discord reconnect as a web-process liveness failure.
-- `/health/ready` returns HTTP 503 until Discord is connected and all startup tasks (slash-command registration and the three panels) have succeeded.
-- Startup tasks are tracked independently. A failure updating one panel no longer prevents the remaining startup tasks from running.
-- Added Discord client/shard connection logs, interaction receipt logs, interaction duration/acknowledgement error details, and process-level failure logs.
-- The Content Creator type button now defers its ephemeral reply before role assignment API calls, then edits that reply. This addresses a likely source of Discord `Unknown interaction` errors.
-- Role, lane, and Content Creator role changes now share one silver `Avisala ROLE SELECTION LOG` per member ID, with an avatar thumbnail and recent-change history. Existing duplicate role logs are cleaned during startup recovery.
-- Giveaway claim history uses only one editable `🎁 GIVEAWAY CLAIM TRACKER` per member ID. Separate `🎁 GIVEAWAY LOG` action embeds are no longer created; old duplicate giveaway action logs are cleaned during startup recovery.
-- Both log types now use Discord channel ID `1540923700336009226`. Ensure the bot has View Channel, Read Message History, Send Messages, Embed Links, Manage Roles, and role hierarchy access there.
+## Fixes in this build
+- Restored the missing Role & Lane and Content Creator constants/helpers, including `clearRoles`, `updateRoleSelection`, and `fetchApprovedContentCreatorMember`.
+- Content Creator reaction roles now remove the reaction for ineligible members and privately direct them to the Content Creator help channel. Platform/type button interactions are acknowledged before slower Discord API calls.
+- Role, lane, creator-type, and creator-platform changes share one silver `⚔️ ROLE SELECTION LOG` per member, with the animated Avisala header, member avatar/ID, added/removed roles, timestamp, and recent changes. The bot edits the existing log and removes duplicate role logs during startup recovery.
+- Removed the Clear Roles / Clear Lanes buttons from the private My Selection view. The existing Role & Lane selection menus and switching controls remain available.
+- Giveaway claims now acknowledge the button immediately, report an existing role and its deadline, and create/edit one `🎁 GIVEAWAY CLAIM TRACKER` per member. Separate giveaway action-log embeds are disabled.
+- Both role and giveaway logs use shared Discord channel ID `1540923700336009226`; no `LOG_CHANNEL_ID` or `GIVEAWAY_LOG_CHANNEL_ID` environment variable is required for the log destination.
+- Giveaway tracker messages store absolute expiry timestamps so active 24-hour expirations can be recovered after Render restarts. Startup recovery removes duplicate tracker messages.
 
 ## Deploy
-1. Replace the project files in your existing Render-connected repository with these files and commit/push, or use the ZIP in your normal repository workflow.
-2. Keep the existing environment variables configured in Render. Do not add a `.env` file to source control.
+1. Replace the files in your existing Render-connected GitHub repository with the files in this ZIP, then commit and push.
+2. Keep your existing secrets and environment variables in Render; do not put the Discord token in GitHub.
 3. Confirm the Render start command is `npm start`.
-4. Keep Render's health-check path set to `/health` if you use one. `/health` intentionally remains HTTP 200 when the web server is alive and reports bot readiness in JSON. Use `/health/ready` only if you explicitly want a strict readiness endpoint that returns 503 during startup, disconnects, or failed startup tasks.
-5. After deployment, open `https://YOUR-SERVICE.onrender.com/health` and inspect:
-   - `status`: `healthy` or `degraded`
-   - `discord`: `connected` or `disconnected`
-   - `startup.tasks`: each task should be `ok`
-   - `diagnostics.interactionsSeen`: should increase when a user clicks a component or runs a command
-   - `diagnostics.lastInteractionError`: records the last error code/name if an interaction failed
+4. The bot needs View Channel, Read Message History, Send Messages, Embed Links, and Manage Roles in the shared log channel, plus Manage Roles with the bot's highest role above all roles it manages.
+5. After deployment, check Render logs. All startup tasks should complete successfully, especially `set up Content Creator panel` and `recover persistent giveaway expiration records`.
+6. Test a Role & Lane selection, creator eligibility, a new giveaway claim, a repeated claim, ticket creation, and ticket closure.
 
-## If the bot is online but commands/buttons still fail
-- If `interactionsSeen` does not increase, verify the command/button is from this bot, that the app is installed in the server, and that Discord interactions are reaching the current deployment.
-- If `interactionsSeen` increases, inspect Render logs for `Interaction received`, `Interaction failed`, and the `elapsedMs` / `acknowledged` details.
-- For role assignment failures, check the bot has **Manage Roles** permission and that its highest role is above every role it must grant/remove.
-- Do not paste your bot token into logs, screenshots, or public issue reports.
+## Important limits
+- Existing giveaway roles claimed before a tracker message was successfully saved have no reliable historical claim timestamp. If a member clicks the claim button while already holding an untracked Giveaway role, the bot starts a new 24-hour tracking window at that moment.
+- Tickety ticket creation/closure detection depends on Tickety's channel and permission-overwrite behavior. Verify with a test ticket after deployment.
+- Editing a Discord message does not move it to the bottom of the channel; Discord keeps edited messages in their original position.
